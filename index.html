@@ -1,0 +1,1862 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Panel de Mantenimiento Nacional</title>
+<style>
+  :root{
+    --bg:#f2f3f8;
+    --surface:#ffffff;
+    --surface-alt:#eef0f7;
+    --border:#e1e4ee;
+    --text:#12172b;
+    --text-dim:#636d84;
+    --text-faint:#9aa2b6;
+
+    --blue:#2e5eff;
+    --green:#00c48c;
+    --orange:#ff9f1c;
+    --purple:#8b5cf6;
+    --pink:#ff3d71;
+    --teal:#00b8d9;
+
+    --centro:var(--blue);
+    --norte:var(--green);
+    --golfo:var(--orange);
+    --peninsular:var(--pink);
+
+    --good:#00c48c;
+    --warn:#ff9f1c;
+    --bad:#ff3d71;
+
+    --font-head:'Arial Narrow',Arial,sans-serif;
+    --font-body:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
+    --font-mono:'SFMono-Regular',Consolas,'Courier New',monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-body);-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1200px;margin:0 auto;padding:28px 20px 64px;}
+
+  header{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;padding-bottom:22px;margin-bottom:22px;flex-wrap:wrap;}
+  header h1{
+    font-family:var(--font-head);font-weight:700;font-size:34px;letter-spacing:.2px;margin:0 0 4px;
+    background:linear-gradient(90deg,var(--blue),var(--purple) 60%,var(--pink));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  header p{margin:0;color:var(--text-dim);font-size:13.5px;}
+  .header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .save-indicator{font-family:var(--font-mono);font-size:11.5px;color:var(--text-faint);display:flex;align-items:center;gap:6px;white-space:nowrap;}
+  .save-dot{width:7px;height:7px;border-radius:50%;background:var(--good);transition:background .2s;}
+  .save-dot.saving{background:var(--warn);}
+  button.reset-btn{
+    background:var(--surface);border:1.5px solid var(--border);color:var(--text-dim);font-family:var(--font-body);
+    font-weight:600;font-size:12.5px;padding:9px 15px;border-radius:8px;cursor:pointer;
+    transition:border-color .15s,color .15s,transform .1s;
+  }
+  button.reset-btn:hover{border-color:var(--pink);color:var(--pink);transform:translateY(-1px);}
+
+  button.archive-btn{
+    background:linear-gradient(90deg,var(--blue),var(--purple));border:none;color:#fff;font-family:var(--font-body);
+    font-weight:700;font-size:12.5px;padding:9px 16px;border-radius:8px;cursor:pointer;
+    box-shadow:0 4px 14px -6px rgba(46,94,255,.55);transition:transform .1s,box-shadow .15s;
+  }
+  button.archive-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px -6px rgba(46,94,255,.65);}
+
+  nav.tabs{display:flex;gap:6px;margin-bottom:26px;overflow-x:auto;padding-bottom:2px;}
+  nav.tabs button{
+    background:var(--surface);border:1.5px solid var(--border);color:var(--text-dim);font-family:var(--font-head);
+    font-size:13.5px;letter-spacing:.3px;padding:9px 17px;border-radius:20px;cursor:pointer;white-space:nowrap;transition:all .15s;
+  }
+  nav.tabs button:hover{border-color:var(--blue);color:var(--blue);}
+  nav.tabs button.active{background:var(--text);border-color:var(--text);color:var(--bg);}
+
+  .panel{display:none;}
+  .panel.active{display:block;animation:fade .3s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+  .section-title{font-family:var(--font-head);font-size:19px;font-weight:600;letter-spacing:.2px;margin:0 0 4px;}
+  .section-sub{color:var(--text-dim);font-size:13px;margin:0 0 20px;}
+
+  /* HERO */
+  .hero{
+    display:flex;align-items:center;gap:32px;
+    background:linear-gradient(120deg,#171b2e,#232a4d 55%,#2c1f4d);
+    border-radius:18px;padding:28px 32px;margin-bottom:12px;flex-wrap:wrap;
+    box-shadow:0 12px 30px -14px rgba(20,20,50,.4);
+  }
+  .donut-wrap{position:relative;width:160px;height:160px;flex:none;}
+  .donut{
+    width:160px;height:160px;border-radius:50%;
+    background:conic-gradient(var(--dcolor,var(--blue)) calc(var(--pct,0)*1%), rgba(255,255,255,.12) 0);
+    display:flex;align-items:center;justify-content:center;animation:pop .6s cubic-bezier(.22,1.4,.4,1) both;
+  }
+  @keyframes pop{from{transform:scale(.75);opacity:0;}to{transform:scale(1);opacity:1;}}
+  .donut-inner{width:118px;height:118px;border-radius:50%;background:#171b2e;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .donut-inner .val{font-family:var(--font-mono);font-size:28px;color:#fff;font-weight:600;}
+  .donut-inner .lbl{font-size:10px;color:#9aa2b6;letter-spacing:.5px;margin-top:2px;}
+  .hero-stats{display:flex;gap:28px;flex-wrap:wrap;flex:1;}
+  .hero-stat{color:#fff;}
+  .hero-stat .n{font-family:var(--font-mono);font-size:26px;font-weight:600;}
+  .hero-stat .l{font-size:11.5px;color:#a9b0c6;margin-top:2px;}
+  .hero-stat .bar{width:110px;height:5px;border-radius:3px;background:rgba(255,255,255,.14);margin-top:8px;overflow:hidden;}
+  .hero-stat .bar i{display:block;height:100%;border-radius:3px;width:var(--w,0%);animation:growW 1s cubic-bezier(.22,1,.36,1) both;}
+
+  /* rings (mini donut gauges) */
+  .ring-wrap{position:relative;width:var(--rsize,52px);height:var(--rsize,52px);flex:none;}
+  .ring{
+    width:100%;height:100%;border-radius:50%;
+    background:conic-gradient(var(--rcolor,var(--blue)) calc(var(--rpct,0)*1%), var(--surface-alt) 0);
+    display:flex;align-items:center;justify-content:center;animation:pop .5s cubic-bezier(.22,1.4,.4,1) both;
+  }
+  .ring-inner{width:72%;height:72%;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;}
+  .ring-inner span{font-family:var(--font-mono);font-weight:600;color:var(--text);font-size:11px;}
+
+  /* KPI grid */
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:26px;}
+  .kpi{background:var(--surface);border-radius:14px;padding:18px 20px 20px;border-top:4px solid var(--kcolor,var(--blue));box-shadow:0 6px 18px -12px rgba(20,20,60,.25);}
+  .kpi .kpi-label{font-size:11.5px;font-weight:600;color:var(--text-dim);margin-bottom:10px;}
+  .kpi .kpi-value{font-family:var(--font-mono);font-size:30px;font-weight:600;line-height:1;margin-bottom:12px;color:var(--kcolor,var(--text));}
+  .kpi .kpi-bar{height:6px;background:var(--surface-alt);border-radius:4px;overflow:hidden;}
+  .kpi .kpi-bar-fill{height:100%;border-radius:4px;width:var(--w,0%);animation:growW .9s cubic-bezier(.22,1,.36,1) both;}
+  @keyframes growW{from{width:0;}to{width:var(--w,0%);}}
+  @keyframes growH{from{height:0;}to{height:var(--h,0%);}}
+
+  .chart-box{background:var(--surface);border-radius:16px;padding:22px 22px 18px;margin-bottom:26px;box-shadow:0 6px 18px -12px rgba(20,20,60,.25);}
+  .chart-title{font-family:var(--font-head);font-size:14.5px;font-weight:600;color:var(--text-dim);margin:0 0 4px;}
+  .chart-sub{color:var(--text-faint);font-size:11.5px;margin:0 0 16px;}
+
+  .charts-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px;}
+
+  /* bar+line combo chart (SVG) */
+  .barlinechart-wrap{width:100%;overflow-x:auto;}
+  .barlinechart svg{width:100%;height:230px;min-width:340px;display:block;}
+
+  /* leaderboard */
+  .leaderboard{display:flex;flex-direction:column;gap:12px;}
+  .lb-row{display:flex;align-items:center;gap:12px;}
+  .lb-rank{font-family:var(--font-mono);font-size:12px;color:var(--text-faint);width:14px;}
+  .lb-label{width:140px;font-size:12.5px;font-weight:600;color:var(--text);flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .lb-track{flex:1;height:14px;background:var(--surface-alt);border-radius:8px;overflow:hidden;}
+  .lb-fill{height:100%;border-radius:8px;width:var(--w,0%);animation:growW 1s cubic-bezier(.22,1,.36,1) both;}
+  .lb-val{font-family:var(--font-mono);font-size:12px;width:56px;text-align:right;color:var(--text-dim);}
+
+  /* pie chart (SVG, con datos dentro de las rebanadas) */
+  .pie-row{display:flex;align-items:center;gap:26px;flex-wrap:wrap;}
+  .pie-svg-wrap{width:170px;height:170px;flex:none;filter:drop-shadow(0 4px 14px rgba(20,20,60,.28));animation:pop .6s cubic-bezier(.22,1.4,.4,1) both;}
+  .pie-svg-wrap svg{width:100%;height:100%;display:block;}
+  .pie-legend{display:flex;flex-direction:column;gap:10px;flex:1;min-width:180px;}
+  .pie-legend-row{display:flex;align-items:center;gap:10px;font-size:12.5px;}
+  .pie-swatch{width:11px;height:11px;border-radius:3px;flex:none;}
+  .pie-legend-label{flex:1;color:var(--text);font-weight:600;}
+  .pie-legend-val{font-family:var(--font-mono);color:var(--text-dim);font-size:11.5px;}
+
+  /* line chart */
+  .linechart-wrap{width:100%;overflow-x:auto;}
+  .linechart{animation:fadeIn .5s both;}
+  .linechart svg{width:100%;height:230px;min-width:520px;display:block;}
+  .line-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;}
+  .line-legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);}
+  .line-swatch{width:10px;height:10px;border-radius:50%;}
+  @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+
+  /* monthly editable table */
+  .month-table-wrap{overflow-x:auto;margin-top:16px;}
+  .month-table{width:100%;border-collapse:collapse;font-size:12px;min-width:640px;}
+  .month-table th{font-weight:600;color:var(--text-dim);padding:6px 4px;text-align:center;font-size:11px;}
+  .month-table td{padding:3px;}
+  .month-table td:first-child, .month-table th:first-child{text-align:left;padding-left:4px;font-weight:600;min-width:88px;}
+  .month-table input{width:42px;background:var(--surface-alt);border:1.5px solid transparent;border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:11px;text-align:center;padding:4px 2px;}
+  .month-table input:focus{outline:none;border-color:var(--blue);}
+
+  /* zone cards */
+  .zone-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:16px;margin-bottom:26px;}
+  .zone-card{background:var(--surface);border-radius:14px;border-top:4px solid var(--zone-color,var(--blue));padding:18px 20px 20px;box-shadow:0 6px 18px -12px rgba(20,20,60,.25);}
+  .zone-card .zone-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;}
+  .zone-card .zone-name{font-family:var(--font-head);font-size:16.5px;font-weight:600;color:var(--zone-color,var(--text));}
+  .field-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--surface-alt);gap:10px;}
+  .field-row:last-of-type{border-bottom:none;}
+  .field-row label{font-size:12.5px;color:var(--text-dim);}
+  .field-row input[type=number]{width:66px;background:var(--surface-alt);border:1.5px solid transparent;border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:13.5px;text-align:right;padding:4px 6px;}
+  .field-row input[type=text]{width:100%;max-width:150px;background:var(--surface-alt);border:1.5px solid transparent;border-radius:6px;color:var(--text);font-family:var(--font-body);font-size:13px;text-align:right;padding:4px 8px;}
+  .field-row input:focus{outline:none;border-color:var(--zone-color,var(--blue));}
+  .zone-note{font-size:11.5px;color:var(--text-faint);margin-top:9px;font-family:var(--font-mono);}
+
+  .history-note{font-size:11.5px;color:var(--text-faint);margin:-8px 0 22px;font-family:var(--font-mono);}
+
+  /* Base de Datos / tablas consolidadas y bitácoras */
+  .db-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:22px;}
+  .db-table-wrap{overflow-x:auto;}
+  .db-table{width:100%;border-collapse:collapse;font-size:12px;min-width:520px;}
+  .db-table th{font-weight:700;color:var(--text-dim);padding:9px 8px;text-align:center;font-size:11px;border-bottom:1.5px solid var(--border);white-space:nowrap;}
+  .db-table td{padding:5px 6px;border-bottom:1px solid var(--surface-alt);}
+  .db-table td:first-child{text-align:left;font-weight:600;color:var(--text);white-space:nowrap;padding-right:14px;}
+  .db-table input{width:100%;min-width:64px;background:var(--surface-alt);border:1.5px solid transparent;border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:12px;text-align:center;padding:6px 4px;}
+  .db-table input[type=text],.db-table input[type=date]{font-family:var(--font-body);text-align:left;padding-left:8px;}
+  .db-table input:focus,.db-table select:focus{outline:none;border-color:var(--blue);}
+  .db-table select{width:100%;min-width:90px;background:var(--surface-alt);border:1.5px solid transparent;border-radius:6px;color:var(--text);font-family:var(--font-body);font-size:12px;padding:6px 4px;}
+  .history-list{display:flex;flex-direction:column;gap:8px;}
+  .history-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 12px;background:var(--surface-alt);border-radius:9px;flex-wrap:wrap;}
+  .history-date{font-family:var(--font-mono);font-size:11.5px;color:var(--text-dim);}
+  .history-btns{display:flex;gap:6px;}
+  .db-btn-small{background:var(--surface);border:1.5px solid var(--border);color:var(--text-dim);font-family:var(--font-body);font-weight:600;font-size:11px;padding:5px 11px;border-radius:6px;cursor:pointer;transition:all .15s;}
+  .db-btn-small:hover{border-color:var(--blue);color:var(--blue);}
+  .db-btn-small.danger:hover{border-color:var(--pink);color:var(--pink);}
+
+  footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--border);color:var(--text-faint);font-size:11.5px;}
+
+  @media(max-width:600px){
+    header h1{font-size:26px;}
+    .hero{flex-direction:column;align-items:flex-start;}
+    .kpi .kpi-value{font-size:24px;}
+  }
+
+  /* ---- publicación: zonas seguras (móvil) y tema claro/oscuro ---- */
+  :root{box-sizing:border-box;color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);}
+  html{scroll-padding-top:env(safe-area-inset-top,0px);}
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      color-scheme:dark;
+      --bg:#0e1120; --surface:#171b30; --surface-alt:#20253e; --border:#2b3150;
+      --text:#e9ecf8; --text-dim:#a6aec8; --text-faint:#7b849f;
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --bg:#0e1120; --surface:#171b30; --surface-alt:#20253e; --border:#2b3150;
+    --text:#e9ecf8; --text-dim:#a6aec8; --text-faint:#7b849f;
+  }
+
+  /* ---- estado de la conexión compartida ---- */
+  .save-dot.err{background:var(--bad);}
+  .mode-text{font-family:var(--font-mono);font-size:11.5px;color:var(--text-dim);white-space:nowrap;}
+  body.connecting nav.tabs, body.connecting #panels{pointer-events:none;opacity:.5;transition:opacity .2s;}
+  body.no-admin .admin-only{display:none !important;}
+  body.readonly .db-btn-small[data-log-add]{display:none;}
+
+  /* ---- diálogos propios ---- */
+  .modal-back{position:fixed;top:0;left:0;right:0;bottom:0;z-index:50;display:flex;align-items:center;justify-content:center;
+    padding:max(20px,env(safe-area-inset-top,0px)) 20px max(20px,env(safe-area-inset-bottom,0px));background:rgba(10,12,25,.6);}
+  .modal{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:14px;max-width:460px;width:100%;
+    padding:22px 22px 18px;box-shadow:0 24px 60px -20px rgba(0,0,0,.6);max-height:100%;overflow-y:auto;}
+  .modal p{margin:0 0 18px;font-size:13.5px;line-height:1.55;white-space:pre-line;}
+  .modal-btns{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>Mantenimiento Nacional</h1>
+      <p>Resultados por zona · datos editables · actualizado 02/09/2026</p>
+    </div>
+    <div class="header-actions">
+      <span class="save-indicator"><span class="save-dot" id="saveDot"></span><span id="saveText">Guardado</span></span>
+      <span class="mode-text" id="modeText"></span>
+      <button class="archive-btn admin-only" id="archiveBtn" title="Guarda un respaldo de todas las láminas y pone en cero los contadores del periodo. Revisión Electrónica, Calibraciones Extraordinarias y Encendido de Planta NO se borran: son bitácoras que se van llenando con el tiempo.">Guardar periodo y reiniciar</button>
+      <button class="reset-btn admin-only" id="resetBtn">Restaurar datos originales</button>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs"></nav>
+  <div id="panels"></div>
+
+  <footer>Los cambios se guardan automáticamente y se comparten en tiempo real con todas las personas que tengan el panel abierto (si abres este archivo fuera de Claude, se guardan solo en este dispositivo). "Guardar periodo y reiniciar" archiva el estado actual de todas las láminas y limpia los contadores de Tickets, Mantenimiento, Imagen y Servicios Realizados para el siguiente periodo — Revisión Electrónica, Calibraciones Extraordinarias y Encendido de Planta nunca se borran, solo se les sigue agregando registro con registro. "Restaurar datos originales" vuelve a la información del archivo cargado. La pestaña "Base de Datos" reúne todos los campos y bitácoras en un solo lugar para editar o consultar rápido, y todo se puede descargar en Excel.
+  <br>by: Ing G. Alexander Granados Mendoza</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<script>
+/* ---------- datos iniciales (del archivo Resultados_Mant_Nacional_02-09-26.xlsx) ---------- */
+const ZONES = ['centro','norte','golfo','peninsular'];
+const ZONE_LABEL = {centro:'Centro',norte:'Norte',golfo:'Golfo',peninsular:'Peninsular'};
+const ZONE_COLOR_HEX = {centro:'#2e5eff',norte:'#00c48c',golfo:'#ff9f1c',peninsular:'#ff3d71'};
+const CAT_COLOR_HEX = {tickets:'#2e5eff',mant:'#00c48c',revision:'#ff9f1c',imagen:'#ff3d71',servicios:'#00b8d9'};
+const MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+function initialData(){
+  return {
+    weights:{tickets:20, mant:30, revision:40, imagen:10, servicios:0},
+    calibraciones:[],
+    encendido:[],
+    centro:{
+      info:{estaciones:54, responsable:'Oscar Pulido'},
+      tickets:{cerradas:69, pendientes:13},
+      mant:{triProg:17, triTerm:14, semProg:8, semTerm:6, plantProg:8, plantTerm:6, compresoresProg:0, compresoresTerm:0, climasProg:0, climasTerm:0, vaporesProg:0, vaporesTerm:0},
+      revision:{realizadas:280, meta:280, mensual:[107,143,137,143,118,162,137,143,0,0,0,0]},
+      imagen:{programados:32, realizadas:32},
+      servicios:{programados:0, realizadas:0},
+      encendidoInfo:{numPlantas:0}
+    },
+    norte:{
+      info:{estaciones:41, responsable:'Ernesto López'},
+      tickets:{cerradas:80, pendientes:50},
+      mant:{triProg:8, triTerm:8, semProg:5, semTerm:5, plantProg:5, plantTerm:5, compresoresProg:0, compresoresTerm:0, climasProg:0, climasTerm:0, vaporesProg:0, vaporesTerm:0},
+      revision:{realizadas:162, meta:162, mensual:[101,61,88,74,82,75,62,100,0,0,0,0]},
+      imagen:{programados:20, realizadas:20},
+      servicios:{programados:0, realizadas:0},
+      encendidoInfo:{numPlantas:0}
+    },
+    golfo:{
+      info:{estaciones:43, responsable:'César Carrera'},
+      tickets:{cerradas:134, pendientes:16},
+      mant:{triProg:15, triTerm:15, semProg:7, semTerm:7, plantProg:7, plantTerm:7, compresoresProg:0, compresoresTerm:0, climasProg:0, climasTerm:0, vaporesProg:0, vaporesTerm:0},
+      revision:{realizadas:191, meta:191, mensual:[87,41,66,116,101,90,95,96,0,0,0,0]},
+      imagen:{programados:15, realizadas:15},
+      servicios:{programados:0, realizadas:0},
+      encendidoInfo:{numPlantas:0}
+    },
+    peninsular:{
+      info:{estaciones:22, responsable:'Oscar Valenzuela'},
+      tickets:{cerradas:47, pendientes:6},
+      mant:{triProg:7, triTerm:7, semProg:4, semTerm:4, plantProg:4, plantTerm:4, compresoresProg:0, compresoresTerm:0, climasProg:0, climasTerm:0, vaporesProg:0, vaporesTerm:0},
+      revision:{realizadas:77, meta:77, mensual:[26,51,32,22,18,59,36,41,0,0,0,0]},
+      imagen:{programados:4, realizadas:4},
+      servicios:{programados:0, realizadas:0},
+      encendidoInfo:{numPlantas:0}
+    }
+  };
+}
+
+const CATEGORIES = [
+  {
+    key:'tickets', title:'Tickets de Incidencias', pctLabel:'Cerrado',
+    fields:[{path:'tickets.cerradas', label:'Cerradas'},{path:'tickets.pendientes', label:'Pendientes'}],
+    pct:z=> safeDiv(z.tickets.cerradas, z.tickets.cerradas + z.tickets.pendientes),
+    note:z=> `Total: ${z.tickets.cerradas + z.tickets.pendientes} tickets`,
+    shareValue:z=> z.tickets.cerradas, shareLabel:'Tickets cerrados'
+  },
+  {
+    key:'mant', title:'Mantenimiento Preventivo', pctLabel:'Cumplimiento',
+    fields:[
+      {path:'mant.triProg', label:'Trimestral · Programados'},{path:'mant.triTerm', label:'Trimestral · Terminados'},
+      {path:'mant.semProg', label:'Semestral · Programados'},{path:'mant.semTerm', label:'Semestral · Terminados'},
+      {path:'mant.plantProg', label:'Plantas · Programadas'},{path:'mant.plantTerm', label:'Plantas · Terminadas'}
+    ],
+    pct:z=> safeDiv(z.mant.triTerm+z.mant.semTerm+z.mant.plantTerm, z.mant.triProg+z.mant.semProg+z.mant.plantProg),
+    note:z=> `Terminados: ${z.mant.triTerm+z.mant.semTerm+z.mant.plantTerm} / Programados: ${z.mant.triProg+z.mant.semProg+z.mant.plantProg}`,
+    shareValue:z=> z.mant.triTerm+z.mant.semTerm+z.mant.plantTerm, shareLabel:'Trabajos terminados'
+  },
+  {
+    key:'revision', title:'Revisión Electrónica', pctLabel:'Cumplimiento',
+    fields:[{path:'revision.realizadas', label:'Realizadas'},{path:'revision.meta', label:'Meta'}],
+    pct:z=> safeDiv(z.revision.realizadas, z.revision.meta),
+    note:z=> `${z.revision.realizadas} de ${z.revision.meta} revisiones bimestrales`,
+    shareValue:z=> z.revision.realizadas, shareLabel:'Revisiones realizadas'
+  },
+  {
+    key:'imagen', title:'Imagen', pctLabel:'Cumplimiento',
+    fields:[{path:'imagen.programados', label:'Programados'},{path:'imagen.realizadas', label:'Realizadas'}],
+    pct:z=> safeDiv(z.imagen.realizadas, z.imagen.programados),
+    note:z=> `${z.imagen.realizadas} de ${z.imagen.programados} programados`,
+    shareValue:z=> z.imagen.realizadas, shareLabel:'Trabajos realizados'
+  },
+  {
+    key:'servicios', title:'Servicios Realizados', pctLabel:'Cumplimiento',
+    fields:[{path:'servicios.programados', label:'Total de Mangueras'},{path:'servicios.realizadas', label:'Mangueras Calibradas'}],
+    pct:z=> safeDiv(z.servicios.realizadas, z.servicios.programados),
+    note:z=> `${z.servicios.realizadas} mangueras calibradas de ${z.servicios.programados} en total`,
+    shareValue:z=> z.servicios.realizadas, shareLabel:'Mangueras calibradas'
+  }
+];
+
+/* Campos consolidados para la pestaña "Base de Datos" */
+const DB_FIELDS = [
+  {path:'info.estaciones', label:'Estaciones', type:'number'},
+  {path:'info.responsable', label:'Responsable', type:'text'},
+  {path:'tickets.cerradas', label:'Tickets · Cerradas', type:'number'},
+  {path:'tickets.pendientes', label:'Tickets · Pendientes', type:'number'},
+  {path:'mant.triProg', label:'Mant. Trimestral · Prog.', type:'number'},
+  {path:'mant.triTerm', label:'Mant. Trimestral · Term.', type:'number'},
+  {path:'mant.semProg', label:'Mant. Semestral · Prog.', type:'number'},
+  {path:'mant.semTerm', label:'Mant. Semestral · Term.', type:'number'},
+  {path:'mant.plantProg', label:'Mant. Plantas · Prog.', type:'number'},
+  {path:'mant.plantTerm', label:'Mant. Plantas · Term.', type:'number'},
+  {path:'mant.compresoresProg', label:'Mant. Compresores · Prog.', type:'number'},
+  {path:'mant.compresoresTerm', label:'Mant. Compresores · Term.', type:'number'},
+  {path:'mant.climasProg', label:'Mant. Climas · Prog.', type:'number'},
+  {path:'mant.climasTerm', label:'Mant. Climas · Term.', type:'number'},
+  {path:'mant.vaporesProg', label:'Mant. Vapores · Prog.', type:'number'},
+  {path:'mant.vaporesTerm', label:'Mant. Vapores · Term.', type:'number'},
+  {path:'revision.realizadas', label:'Revisión · Realizadas', type:'number'},
+  {path:'revision.meta', label:'Revisión · Meta', type:'number'},
+  {path:'imagen.programados', label:'Imagen · Programados', type:'number'},
+  {path:'imagen.realizadas', label:'Imagen · Realizadas', type:'number'},
+  {path:'servicios.programados', label:'Servicios · Total de Mangueras', type:'number'},
+  {path:'servicios.realizadas', label:'Servicios · Mangueras Calibradas', type:'number'},
+  {path:'encendidoInfo.numPlantas', label:'Encendido · Número de Plantas', type:'number'}
+];
+
+/* Tablas de equipo dentro de Mantenimiento Preventivo (aparte del % general) */
+const EQUIPOS = [
+  {key:'plantas', label:'Plantas', prog:'mant.plantProg', term:'mant.plantTerm', color:'#2e5eff'},
+  {key:'compresores', label:'Compresores', prog:'mant.compresoresProg', term:'mant.compresoresTerm', color:'#00c48c'},
+  {key:'climas', label:'Climas', prog:'mant.climasProg', term:'mant.climasTerm', color:'#ff9f1c'},
+  {key:'vapores', label:'Sistema de Recolección de Vapores', prog:'mant.vaporesProg', term:'mant.vaporesTerm', color:'#8b5cf6'}
+];
+
+/* Configuración de las bitácoras (Calibraciones Extraordinarias / Encendido de Planta) */
+const CALIBRACIONES_FIELDS = [
+  {key:'fecha', label:'Fecha', type:'date'},
+  {key:'zona', label:'Zona', type:'select', options: ZONES.map(z=>({value:z, label:ZONE_LABEL[z]}))},
+  {key:'estacion', label:'Estación', type:'text'},
+  {key:'motivo', label:'Motivo', type:'text'}
+];
+const ENCENDIDO_FIELDS = [
+  {key:'fecha', label:'Fecha', type:'date'},
+  {key:'zona', label:'Zona', type:'select', options: ZONES.map(z=>({value:z, label:ZONE_LABEL[z]}))},
+  {key:'estacion', label:'Estación', type:'text'},
+  {key:'administrador', label:'Administrador', type:'text'},
+  {key:'encendio', label:'¿Encendió?', type:'select', options:[{value:'true',label:'Sí'},{value:'false',label:'No'}]}
+];
+
+function safeDiv(a,b){ return b>0 ? a/b : 0; }
+function getPath(obj,path){ return path.split('.').reduce((o,k)=>o[k],obj); }
+function setPath(obj,path,val){ const parts=path.split('.'); let o=obj; for(let i=0;i<parts.length-1;i++)o=o[parts[i]]; o[parts[parts.length-1]]=val; }
+function pctColor(p){ if(p>=0.9) return 'var(--good)'; if(p>=0.7) return 'var(--warn)'; return 'var(--bad)'; }
+function fmtPct(p){ return (p*100).toFixed(1)+'%'; }
+function fmtDate(iso){
+  try{ return new Date(iso).toLocaleString('es-MX', {dateStyle:'medium', timeStyle:'short'}); }catch(e){ return iso; }
+}
+const CREDIT_HTML = `<p style="text-align:right;font-size:10px;color:var(--text-faint);margin-top:28px;padding-top:10px;border-top:1px solid var(--border);opacity:0.75;">by: Ing G. Alexander Granados Mendoza</p>`;
+function addCreditToAllPanels(){
+  document.querySelectorAll('.panel').forEach(p=> p.insertAdjacentHTML('beforeend', CREDIT_HTML));
+}
+function ringHtml(pct, colorHex, size, fontSize){
+  size = size||52; fontSize = fontSize||11;
+  const p = Math.max(Math.min(pct*100,100),0);
+  return `<div class="ring-wrap" style="--rsize:${size}px"><div class="ring" style="--rpct:${p};--rcolor:${colorHex}"><div class="ring-inner"><span style="font-size:${fontSize}px">${(pct*100).toFixed(0)}%</span></div></div></div>`;
+}
+
+/* ---------- utilidades ---------- */
+const $ = id => document.getElementById(id);
+const clone = o => JSON.parse(JSON.stringify(o));
+function esc(s){
+  return String(s==null ? '' : s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ---------- diálogos propios ----------
+   alert()/confirm() del navegador no funcionan dentro del visor donde se publica la página,
+   así que los avisos y confirmaciones se dibujan aquí. */
+function uiDialog(message, opts){
+  opts = opts || {};
+  return new Promise(resolve=>{
+    const back = document.createElement('div');
+    back.className = 'modal-back';
+    back.innerHTML = '<div class="modal" role="dialog" aria-modal="true"><p></p><div class="modal-btns"></div></div>';
+    back.querySelector('p').textContent = message;
+    const btns = back.querySelector('.modal-btns');
+    const onKey = e=>{ if(e.key==='Escape') done(false); };
+    const done = v=>{ document.removeEventListener('keydown', onKey); back.remove(); resolve(v); };
+    if(opts.cancelText){
+      const c = document.createElement('button');
+      c.className = 'reset-btn'; c.textContent = opts.cancelText; c.onclick = ()=>done(false);
+      btns.appendChild(c);
+    }
+    const ok = document.createElement('button');
+    ok.className = 'archive-btn'; ok.textContent = opts.confirmText || 'Aceptar'; ok.onclick = ()=>done(true);
+    btns.appendChild(ok);
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(back);
+    ok.focus();
+  });
+}
+const uiAlert = msg => uiDialog(msg);
+const uiConfirm = msg => uiDialog(msg, {confirmText:'Continuar', cancelText:'Cancelar'});
+
+/* ---------- estado ---------- */
+let DATA = initialData();
+const STORAGE_KEY = 'mant-nacional-data-v3';   // solo modo local (archivo abierto fuera de Claude)
+const HISTORY_KEY = 'mant-nacional-history-v1';
+
+let DB = null;              // base de datos compartida (null = modo local)
+let USER = null;
+let MY_ID = 'local';        // id del usuario, se usa para nombrar sus documentos de bitácora
+let CAN_WRITE = true;       // puede editar datos compartidos
+let CAN_ADMIN = true;       // puede usar Guardar periodo / Restaurar / Eliminar periodo
+const ZONE_PASSWORDS = {centro:'18256', norte:'ZN15170', golfo:'ZG19191', peninsular:'ZP40457'};
+let unlockedZone = null;    // zona desbloqueada con contraseña en este navegador (candado por zona)
+let HIST = [];              // periodos guardados: {id, date, logsOmitidos?, data?}
+let BIT_IDS = new Set();    // documentos de bitácora que existen en el servidor
+const pending = new Map();  // llave -> versión: cambios locales aún no confirmados en el servidor
+let saveTimer = null;
+let flushChain = Promise.resolve();
+let warnedWrite = false;
+
+function setSave(state){
+  const dot = $('saveDot'), txt = $('saveText');
+  if(!dot || !txt) return;
+  dot.classList.toggle('saving', state==='saving');
+  dot.classList.toggle('err', state==='error');
+  txt.textContent = state==='saving' ? 'Guardando…' : state==='error' ? 'Error al guardar' : 'Guardado';
+}
+function setMode(text){ const m = $('modeText'); if(m) m.textContent = text; }
+
+/* ---------- respaldo local (solo si la página se abre como archivo suelto) ---------- */
+function localGet(key){ try{ return window.localStorage ? localStorage.getItem(key) : null; }catch(e){ return null; } }
+function localSet(key, val){ try{ if(window.localStorage){ localStorage.setItem(key, val); return true; } }catch(e){} return false; }
+
+/* ---------- limpieza de datos que llegan del servidor (son de otras personas: no se confía en su forma) ---------- */
+function mergeZone(z, body){
+  const base = initialData()[z];
+  const out = {};
+  Object.keys(base).forEach(sec=>{
+    const bs = base[sec];
+    const src = (body && body[sec] && typeof body[sec]==='object') ? body[sec] : {};
+    out[sec] = {};
+    Object.keys(bs).forEach(k=>{
+      const dv = bs[k], v = src[k];
+      if(Array.isArray(dv)){
+        out[sec][k] = dv.map((d,i)=>{ const x = Array.isArray(v) ? +v[i] : d; return Number.isFinite(x) ? x : 0; });
+      } else if(typeof dv==='number'){
+        out[sec][k] = (v===undefined) ? dv : (Number.isFinite(+v) ? +v : 0);
+      } else {
+        out[sec][k] = (typeof v==='string') ? v.slice(0,120) : dv;
+      }
+    });
+  });
+  return out;
+}
+function sanitizeEntry(logKey, e, docId){
+  e = e || {};
+  const s = (v, n) => (typeof v==='string' ? v : (v==null ? '' : String(v))).slice(0, n||120);
+  const base = {
+    fecha: s(e.fecha, 10),
+    zona: ZONES.includes(e.zona) ? e.zona : ZONES[0],
+    estacion: s(e.estacion),
+    t: Number.isFinite(+e.t) ? +e.t : 0,
+    _d: docId
+  };
+  if(logKey==='calibraciones') return Object.assign(base, {motivo: s(e.motivo, 300)});
+  return Object.assign(base, {administrador: s(e.administrador), encendio: (e.encendio===true || e.encendio==='true') ? 'true' : 'false'});
+}
+function applyLoadedLocal(loaded){
+  const base = initialData();
+  DATA.weights = Object.assign({}, base.weights, loaded.weights || {});
+  ZONES.forEach(z=>{ DATA[z] = mergeZone(z, loaded[z]); });
+  DATA.calibraciones = (Array.isArray(loaded.calibraciones) ? loaded.calibraciones : []).map(e=>sanitizeEntry('calibraciones', e, bucketId('calibraciones')));
+  DATA.encendido = (Array.isArray(loaded.encendido) ? loaded.encendido : []).map(e=>sanitizeEntry('encendido', e, bucketId('encendido')));
+}
+function plainData(){
+  const d = clone(DATA);
+  ['calibraciones','encendido'].forEach(k=>{ d[k] = (d[k] || []).map(e=>{ const r = Object.assign({}, e); delete r._d; return r; }); });
+  return d;
+}
+function loadLocal(){
+  try{ const raw = localGet(STORAGE_KEY); if(raw) applyLoadedLocal(JSON.parse(raw)); }catch(e){}
+  try{
+    const h = localGet(HISTORY_KEY);
+    if(h) HIST = JSON.parse(h).map((x,i)=>({id:'l'+i, date:x.date, data:x.data}));
+  }catch(e){}
+}
+
+/* ---------- bitácoras: un documento por persona y por semana ----------
+   Cada quien escribe en sus propios documentos, así dos personas que registran a la vez no se pisan,
+   y ningún documento crece sin límite. */
+function isoWeek(d){
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - day);
+  const y = t.getUTCFullYear();
+  const w = Math.ceil((((t - Date.UTC(y,0,1)) / 86400000) + 1) / 7);
+  return y + 'w' + String(w).padStart(2,'0');
+}
+function bucketId(logKey){
+  return (logKey==='calibraciones' ? 'cal' : 'enc') + '_' + isoWeek(new Date()) + '_' + MY_ID;
+}
+function logKeyOfDoc(id){ return id.indexOf('cal_')===0 ? 'calibraciones' : id.indexOf('enc_')===0 ? 'encendido' : null; }
+
+/* ---------- guardado ---------- */
+function queueSave(key){
+  key = key || 'all';
+  pending.set(key, (pending.get(key) || 0) + 1);
+  setSave('saving');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(scheduleFlush, 450);
+}
+function scheduleFlush(){ flushChain = flushChain.then(doFlush).catch(()=>{}); return flushChain; }
+function flushNow(){ clearTimeout(saveTimer); return scheduleFlush(); }
+
+async function writeKey(k){
+  if(k.indexOf('z:')===0){
+    const z = k.slice(2);
+    await DB.doc('panel/zona-' + z).set(clone(DATA[z]));
+  } else if(k==='config'){
+    await DB.doc('panel/config').set({weights: clone(DATA.weights)});
+  } else if(k.indexOf('b:')===0){
+    const id = k.slice(2);
+    const logKey = logKeyOfDoc(id);
+    if(!logKey) return;
+    const entries = DATA[logKey].filter(e=>e._d===id).map(e=>{ const r = Object.assign({}, e); delete r._d; return r; });
+    await DB.doc('bitacora/' + id).set({log: logKey, entries: entries});
+  }
+}
+
+async function doFlush(){
+  if(pending.size===0){ setSave('saved'); return; }
+  const batch = Array.from(pending.entries());
+  if(!DB){
+    const ok = localSet(STORAGE_KEY, JSON.stringify(plainData()));
+    batch.forEach(([k,v])=>{ if(pending.get(k)===v) pending.delete(k); });
+    setSave(ok ? 'saved' : 'error');
+    return;
+  }
+  let failed = false;
+  for(const [k,v] of batch){
+    try{
+      await writeKey(k);
+      if(pending.get(k)===v) pending.delete(k);
+    }catch(e){
+      console.error('No se pudo guardar', k, e);
+      if(e && e.code==='invalid_argument'){
+        // reintentar no sirve: sin permiso de escritura o documento demasiado grande
+        pending.delete(k);
+        if(!warnedWrite){ warnedWrite = true; uiAlert('No se pudo guardar este cambio. Puede que tu acceso sea solo de lectura o que el registro sea demasiado grande.'); }
+      }
+      failed = true;
+    }
+  }
+  if(failed){
+    setSave('error');
+    if(pending.size){ clearTimeout(saveTimer); saveTimer = setTimeout(scheduleFlush, 4000); }
+  } else {
+    setSave(pending.size ? 'saving' : 'saved');
+  }
+}
+
+/* al cerrar o esconder la pestaña, se guarda de inmediato lo que esté pendiente */
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden' && pending.size) flushNow(); });
+window.addEventListener('pagehide', ()=>{ if(pending.size) flushNow(); });
+
+/* ---------- sincronización en vivo ---------- */
+function rerenderKeepingFocus(){
+  const a = document.activeElement;
+  let ref = null;
+  if(a && (a.tagName==='INPUT' || a.tagName==='SELECT') && a.closest && a.closest('#panels')){
+    ref = {log:a.dataset.log, idx:a.dataset.idx, field:a.dataset.field, zone:a.dataset.zone, path:a.dataset.path, tag:a.tagName, ss:null, se:null};
+    try{ ref.ss = a.selectionStart; ref.se = a.selectionEnd; }catch(e){}
+  }
+  const activeBtn = document.querySelector('nav.tabs button.active');
+  const activeKey = activeBtn ? activeBtn.dataset.tab : null;
+  const sy = window.scrollY;
+  renderAll(null, activeKey);
+  if(ref){
+    const scope = (activeKey && $('panel-' + activeKey)) || document;
+    let again = null;
+    if(ref.log) again = scope.querySelector('[data-log="' + ref.log + '"][data-idx="' + ref.idx + '"][data-field="' + ref.field + '"]');
+    else if(ref.zone) again = scope.querySelector('input[data-zone="' + ref.zone + '"][data-path="' + ref.path + '"]');
+    if(again){
+      again.focus();
+      let restored = false;
+      try{ if(ref.ss!==null && again.setSelectionRange){ again.setSelectionRange(ref.ss, ref.se); restored = true; } }catch(e){}
+      // los campos numéricos no guardan posición del cursor: se deja al final, como al escribir
+      if(!restored && again.tagName==='INPUT'){ const v = again.value; again.value = ''; again.value = v; }
+    }
+  }
+  window.scrollTo(0, sy);
+}
+
+const ready = {panel:false, bitacora:false, historial:false};
+function markReady(k){
+  ready[k] = true;
+  if(ready.panel && ready.bitacora && ready.historial){
+    document.body.classList.remove('connecting');
+    setMode(CAN_WRITE ? 'En línea · compartido en tiempo real' : 'Solo lectura · en tiempo real');
+  }
+}
+
+function onPanelSnap(snap){
+  let changed = false;
+  snap.docs.forEach(d=>{
+    if(!d.exists) return;
+    const body = d.data() || {};
+    if(d.id.indexOf('zona-')===0){
+      const z = d.id.slice(5);
+      if(ZONES.indexOf(z)<0 || pending.has('z:' + z)) return;
+      const merged = mergeZone(z, body);
+      if(JSON.stringify(merged)!==JSON.stringify(DATA[z])){ DATA[z] = merged; changed = true; }
+    } else if(d.id==='config'){
+      if(pending.has('config')) return;
+      const w = Object.assign({}, initialData().weights);
+      Object.keys(w).forEach(k=>{ const x = body.weights ? +body.weights[k] : NaN; if(Number.isFinite(x)) w[k] = x; });
+      if(JSON.stringify(w)!==JSON.stringify(DATA.weights)){ DATA.weights = w; changed = true; }
+    }
+  });
+  markReady('panel');
+  if(changed) rerenderKeepingFocus();
+}
+
+function onBitSnap(snap){
+  const remote = new Map();   // id -> {logKey, entries}
+  snap.docs.forEach(d=>{
+    if(!d.exists) return;
+    const logKey = logKeyOfDoc(d.id);
+    if(!logKey) return;
+    const b = d.data() || {};
+    const arr = Array.isArray(b.entries) ? b.entries : [];
+    remote.set(d.id, {logKey: logKey, entries: arr.map(e=>sanitizeEntry(logKey, e, d.id))});
+  });
+  BIT_IDS = new Set(remote.keys());
+  let changed = false;
+  ['calibraciones','encendido'].forEach(logKey=>{
+    const localByDoc = new Map();
+    (DATA[logKey] || []).forEach(e=>{ if(!localByDoc.has(e._d)) localByDoc.set(e._d, []); localByDoc.get(e._d).push(e); });
+    const ids = new Set();
+    remote.forEach((v,id)=>{ if(v.logKey===logKey) ids.add(id); });
+    localByDoc.forEach((_,id)=>{ if(pending.has('b:' + id)) ids.add(id); });
+    const next = [];
+    Array.from(ids).sort().forEach(id=>{
+      const src = pending.has('b:' + id) ? (localByDoc.get(id) || []) : (remote.has(id) ? remote.get(id).entries : []);
+      src.forEach(e=>next.push(e));
+    });
+    next.sort((a,b)=> (a.t - b.t) || (a._d < b._d ? -1 : a._d > b._d ? 1 : 0));
+    if(JSON.stringify(next)!==JSON.stringify(DATA[logKey])){ DATA[logKey] = next; changed = true; }
+  });
+  markReady('bitacora');
+  if(changed) rerenderKeepingFocus();
+}
+
+function onHistSnap(snap){
+  HIST = snap.docs.filter(d=>d.exists).map(d=>{
+    const b = d.data() || {};
+    return {id:d.id, date:String(b.date || ''), logsOmitidos:!!b.logsOmitidos};
+  }).sort((a,b)=> a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+  markReady('historial');
+  renderHistoryList();
+}
+
+function startShared(){
+  const onErr = name => e=>{
+    console.error('Sincronización', name, e);
+    setMode(e && e.code==='revoked' ? 'Sin acceso al panel' : 'Error de sincronización · recarga la página');
+  };
+  DB.collection('panel').onSnapshot(onPanelSnap, onErr('panel'));
+  DB.collection('bitacora').onSnapshot(onBitSnap, onErr('bitacora'));
+  DB.collection('historial').onSnapshot(onHistSnap, onErr('historial'));
+  setTimeout(()=>{
+    if(document.body.classList.contains('connecting')) setMode('Sin respuesta del servidor · recarga la página');
+  }, 15000);
+}
+
+/* ---------- permisos en pantalla ---------- */
+function applyAccess(){
+  document.body.classList.toggle('no-admin', !CAN_ADMIN);
+  document.body.classList.toggle('readonly', !CAN_WRITE);
+  if(!CAN_WRITE){
+    document.querySelectorAll('#panels input, #panels select, #panels [data-log-add], #panels [data-log-del]').forEach(el=>{ el.disabled = true; });
+  }
+}
+
+/* ---------- candado por zona (contraseña) ----------
+   Además del permiso de la plataforma (CAN_WRITE), cada campo de una zona
+   solo se habilita si esta pestaña del navegador desbloqueó esa zona con
+   su contraseña. Es una traba de uso pensada para que nadie edite por
+   error los datos de una zona que no es la suya, no un mecanismo de
+   seguridad: las contraseñas están en el código de la página y cualquiera
+   que abra el archivo como texto puede leerlas o saltarse el candado
+   desde las herramientas de desarrollador del navegador. */
+function canEditZone(z){ return CAN_WRITE && unlockedZone===z; }
+function applyZoneLock(){
+  document.querySelectorAll('#panels [data-zone]').forEach(el=>{
+    const z = el.dataset.zone;
+    if(z==='weights') return; // los pesos del índice no son de una zona
+    if(!canEditZone(z)) el.disabled = true;
+  });
+  document.querySelectorAll('#panels [data-log][data-field], #panels [data-log-del]').forEach(el=>{
+    const logKey = el.dataset.log || el.dataset.logDel;
+    const idx = +el.dataset.idx;
+    const entry = DATA[logKey] && DATA[logKey][idx];
+    if(!entry || !canEditZone(entry.zona)) el.disabled = true;
+  });
+  document.querySelectorAll('#panels [data-log-add]').forEach(el=>{
+    if(!(CAN_WRITE && unlockedZone)) el.disabled = true;
+  });
+}
+
+/* ---------- restaurar datos originales ---------- */
+async function restoreOriginal(){
+  if(!(await uiConfirm('¿Restaurar los datos originales del archivo?\n\nSe perderán las ediciones de todas las zonas (incluidas las bitácoras).'))) return;
+  DATA = initialData();
+  if(DB){
+    try{
+      for(const id of Array.from(BIT_IDS)) await DB.doc('bitacora/' + id).delete();
+    }catch(e){ console.error(e); }
+    ZONES.forEach(z=>queueSave('z:' + z));
+    queueSave('config');
+  } else {
+    queueSave();
+  }
+  await flushNow();
+  renderAll();
+}
+$('resetBtn').addEventListener('click', restoreOriginal);
+
+/* ---------- historial (guardar/leer/borrar periodos) ---------- */
+async function getHistData(h){
+  if(h.data) return h.data;
+  try{
+    const s = await DB.doc('historial_datos/' + h.id).get();
+    const b = s.exists ? s.data() : null;
+    return (b && b.data) ? b.data : null;
+  }catch(e){ return null; }
+}
+function renderHistoryList(){
+  const box = $('historyList');
+  if(!box) return;
+  if(HIST.length===0){
+    box.innerHTML = '<p class="section-sub" style="margin:0;">Todavía no hay periodos guardados.</p>';
+    return;
+  }
+  box.innerHTML = HIST.map((h,idx)=>`
+    <div class="history-item">
+      <span class="history-date">${esc(fmtDate(h.date))}${h.logsOmitidos ? ' · sin bitácoras' : ''}</span>
+      <span class="history-btns">
+        <button class="db-btn-small" data-hist-download="${idx}">Descargar</button>
+        <button class="db-btn-small danger admin-only" data-hist-delete="${idx}">Eliminar</button>
+      </span>
+    </div>`).slice().reverse().join('');
+  box.querySelectorAll('[data-hist-download]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      const h = HIST[+b.dataset.histDownload];
+      if(!h) return;
+      const data = await getHistData(h);
+      if(!data){ await uiAlert('No se pudo leer ese periodo.'); return; }
+      downloadXLSX(data, 'periodo-' + (h.date || '').slice(0,10) + '.xlsx');
+    });
+  });
+  box.querySelectorAll('[data-hist-delete]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      if(!(await uiConfirm('¿Eliminar este periodo guardado del historial? No se puede deshacer.'))) return;
+      const idx = +b.dataset.histDelete;
+      const h = HIST[idx];
+      if(!h) return;
+      try{
+        if(DB){
+          await DB.doc('historial/' + h.id).delete();
+          await DB.doc('historial_datos/' + h.id).delete();
+        } else {
+          HIST.splice(idx,1);
+          localSet(HISTORY_KEY, JSON.stringify(HIST.map(x=>({date:x.date, data:x.data}))));
+          renderHistoryList();
+        }
+      }catch(e){ console.error(e); await uiAlert('No se pudo eliminar el periodo.'); }
+    });
+  });
+  applyAccess();
+}
+function refreshHistoryList(){ renderHistoryList(); }
+
+/* ---------- Guardar periodo (archivar) y reiniciar contadores ----------
+   Guarda un respaldo con TODAS las láminas tal como están y después pone
+   en cero los contadores de Tickets, Mantenimiento, Imagen y Servicios
+   Realizados para arrancar el siguiente periodo.
+   IMPORTANTE: Revisión Electrónica (realizadas/meta/mensual), Calibraciones
+   Extraordinarias y Encendido de Planta NUNCA se tocan aquí, porque son
+   bitácoras que se van llenando registro con registro — si se borraran,
+   perderían el sentido de acumulado histórico. Tampoco se borran
+   Estaciones/Responsable ni los pesos, por ser datos estructurales.
+------------------------------------------------------------------------ */
+async function archiveAndReset(){
+  const ok = await uiConfirm(
+    'Esto va a:\n\n' +
+    '1) Guardar los datos actuales de TODAS las láminas en un historial.\n' +
+    '2) Poner en cero Tickets, Mantenimiento, Imagen y Servicios Realizados para iniciar un nuevo periodo.\n\n' +
+    'Revisión Electrónica, Calibraciones Extraordinarias y Encendido de Planta NO se borran: son bitácoras y se les sigue agregando registro con registro.\n\n' +
+    '¿Continuar?'
+  );
+  if(!ok) return;
+  setSave('saving');
+  try{
+    await flushNow();
+    const snapshot = plainData();
+    const date = new Date().toISOString();
+    if(DB){
+      let logsOmitidos = false;
+      const size = () => JSON.stringify({data:snapshot}).length;
+      // un documento admite ~256 KB: si las bitácoras ya son muy grandes, el respaldo del periodo va sin ellas
+      if(size() > 230000){ snapshot.encendido = []; logsOmitidos = true; }
+      if(size() > 230000){ snapshot.calibraciones = []; logsOmitidos = true; }
+      const id = 'p' + Date.now();
+      await DB.doc('historial_datos/' + id).set({data: snapshot});
+      await DB.doc('historial/' + id).set({date: date, logsOmitidos: logsOmitidos});
+    } else {
+      HIST.push({id:'l' + HIST.length, date: date, data: snapshot});
+      localSet(HISTORY_KEY, JSON.stringify(HIST.map(x=>({date:x.date, data:x.data}))));
+    }
+
+    ZONES.forEach(z=>{
+      DATA[z].tickets.cerradas = 0;
+      DATA[z].tickets.pendientes = 0;
+      DATA[z].mant.triProg = 0; DATA[z].mant.triTerm = 0;
+      DATA[z].mant.semProg = 0; DATA[z].mant.semTerm = 0;
+      DATA[z].mant.plantProg = 0; DATA[z].mant.plantTerm = 0;
+      DATA[z].mant.compresoresProg = 0; DATA[z].mant.compresoresTerm = 0;
+      DATA[z].mant.climasProg = 0; DATA[z].mant.climasTerm = 0;
+      DATA[z].mant.vaporesProg = 0; DATA[z].mant.vaporesTerm = 0;
+      DATA[z].imagen.programados = 0;
+      DATA[z].imagen.realizadas = 0;
+      DATA[z].servicios.programados = 0;
+      DATA[z].servicios.realizadas = 0;
+      // revision.* / calibraciones / encendido NO se tocan — son bitácoras acumulativas
+      // info.estaciones / info.responsable NO se tocan — son datos estructurales
+      queueSave('z:' + z);
+    });
+    await flushNow();
+    rerenderKeepingFocus();
+    renderHistoryList();
+    await uiAlert('Periodo guardado en el historial.\n\nTickets, Mantenimiento, Imagen y Servicios Realizados quedaron en cero. Revisión Electrónica, Calibraciones Extraordinarias y Encendido de Planta conservan su acumulado.');
+  }catch(e){
+    console.error(e);
+    setSave('error');
+    await uiAlert('Ocurrió un error al guardar el periodo. Intenta de nuevo.');
+  }
+}
+$('archiveBtn').addEventListener('click', archiveAndReset);
+
+/* ---------- arranque ---------- */
+async function boot(){
+  try{ const sz = sessionStorage.getItem('unlockedZone'); if(sz && ZONES.includes(sz)) unlockedZone = sz; }catch(e){}
+  buildTabs();
+  document.body.classList.add('connecting');
+  setMode('Conectando…');
+  renderAll();
+  let db = null, user = null;
+  try{
+    if(window.claude && typeof window.claude.use==='function'){
+      const r = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+      db = r[0]; user = r[1];
+    }
+  }catch(e){}
+  if(db){
+    DB = db; USER = user;
+    try{
+      if(USER){
+        const id = await USER.id();
+        if(id) MY_ID = String(id).replace(/[^A-Za-z0-9_.~:@+-]/g, '-');
+        const w = await USER.can('data.write');
+        if(w===false) CAN_WRITE = false;
+        CAN_ADMIN = CAN_WRITE && !!(await USER.canEdit());
+      }
+    }catch(e){}
+    applyAccess();
+    startShared();
+  } else {
+    loadLocal();
+    document.body.classList.remove('connecting');
+    setMode('Solo en este dispositivo');
+    renderAll();
+  }
+}
+
+
+/* ---------- tabs ---------- */
+const TABS = [
+  {key:'resumen', title:'Resumen'},
+  {key:'basedatos', title:'Base de Datos'},
+  {key:'zonas', title:'Zonas'},
+  ...CATEGORIES.map(c=>({key:c.key, title:c.title})),
+  {key:'encendido', title:'Encendido de Planta'}
+];
+
+function buildTabs(){
+  const nav = document.getElementById('tabs');
+  nav.innerHTML = '';
+  TABS.forEach((t,i)=>{
+    const b = document.createElement('button');
+    b.textContent = t.title;
+    b.dataset.tab = t.key;
+    if(i===0) b.classList.add('active');
+    b.addEventListener('click', ()=> switchTab(t.key));
+    nav.appendChild(b);
+  });
+  const panels = document.getElementById('panels');
+  panels.innerHTML = '';
+  TABS.forEach((t,i)=>{
+    const d = document.createElement('div');
+    d.className = 'panel' + (i===0 ? ' active' : '');
+    d.id = 'panel-'+t.key;
+    panels.appendChild(d);
+  });
+}
+function switchTab(key){
+  document.querySelectorAll('nav.tabs button').forEach(b=> b.classList.toggle('active', b.dataset.tab===key));
+  document.querySelectorAll('.panel').forEach(p=> p.classList.toggle('active', p.id==='panel-'+key));
+}
+
+/* ---------- gráficas propias (sin librerías externas) ---------- */
+
+function polarToCartesian(cx, cy, r, angleDeg){
+  const rad = (angleDeg-90) * Math.PI/180;
+  return { x: cx + r*Math.cos(rad), y: cy + r*Math.sin(rad) };
+}
+
+/* Gráfica de barras con línea de tendencia superpuesta (SVG) */
+function buildBarLineChart(container, items){
+  const n = Math.max(items.length,1);
+  const W = Math.max(340, n*110), H = 230, padL=36, padR=18, padT=26, padB=34;
+  const maxRaw = Math.max(1, ...items.map(it=>+it.value||0));
+  const maxV = maxRaw*1.15;
+  const slotW = (W-padL-padR)/n;
+  const barW = Math.min(56, slotW*0.5);
+  const y = v => H-padB - (v/maxV)*(H-padT-padB);
+  const xCenter = i => padL + slotW*i + slotW/2;
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+  for(let g=0; g<=4; g++){
+    const gv = maxV/4*g;
+    const gy = y(gv);
+    svg += `<line x1="${padL}" y1="${gy.toFixed(2)}" x2="${W-padR}" y2="${gy.toFixed(2)}" style="stroke:var(--border)" stroke-width="1"/>`;
+    svg += `<text x="${padL-6}" y="${(gy+3).toFixed(2)}" font-size="8.5" style="fill:var(--text-faint)" text-anchor="end">${(gv*100).toFixed(0)}%</text>`;
+  }
+  items.forEach((it,i)=>{
+    const val = +it.value||0;
+    const bx = xCenter(i)-barW/2;
+    const by = y(val);
+    const bh = Math.max((H-padB)-by, 1);
+    svg += `<rect x="${bx.toFixed(2)}" y="${by.toFixed(2)}" width="${barW.toFixed(2)}" height="${bh.toFixed(2)}" rx="7" fill="${it.colorHex}" opacity="0.85"/>`;
+    svg += `<text x="${xCenter(i).toFixed(2)}" y="${(by-9).toFixed(2)}" font-size="11.5" font-weight="700" style="fill:var(--text)" text-anchor="middle" font-family="SFMono-Regular,Consolas,monospace">${it.displayValue}</text>`;
+    svg += `<text x="${xCenter(i).toFixed(2)}" y="${H-10}" font-size="10.5" style="fill:var(--text-dim)" text-anchor="middle">${it.label}</text>`;
+  });
+  const pts = items.map((it,i)=> `${xCenter(i).toFixed(2)},${y(+it.value||0).toFixed(2)}`).join(' ');
+  svg += `<polyline points="${pts}" fill="none" style="stroke:var(--text)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" opacity="0.8"/>`;
+  items.forEach((it,i)=>{
+    svg += `<circle cx="${xCenter(i).toFixed(2)}" cy="${y(+it.value||0).toFixed(2)}" r="4.5" style="fill:var(--surface);stroke:var(--text)" stroke-width="2.5"/>`;
+  });
+  svg += `</svg>`;
+  container.innerHTML = `<div class="barlinechart-wrap"><div class="barlinechart">${svg}</div></div>`;
+}
+
+function buildLeaderboard(container, items){
+  const sorted = [...items].sort((a,b)=> b.value-a.value);
+  container.innerHTML = sorted.map((it,i)=>`
+    <div class="lb-row">
+      <span class="lb-rank">${i+1}</span>
+      <span class="lb-label">${it.label}</span>
+      <span class="lb-track"><span class="lb-fill" style="--w:${Math.max(Math.min(it.value*100,100),0)}%;background:${it.colorHex}"></span></span>
+      <span class="lb-val">${it.displayValue}</span>
+    </div>`).join('');
+}
+
+/* Gráfica de pastel (SVG) con el valor y el % escritos dentro de cada rebanada */
+function buildPieChart(container, items){
+  const total = items.reduce((s,it)=>s+(+it.value||0),0)||0;
+  const cx=85, cy=85, r=82;
+  let cum = 0;
+  let paths = '', labels = '';
+
+  if(total<=0){
+    paths = `<circle cx="${cx}" cy="${cy}" r="${r}" style="fill:var(--surface-alt)"/>`;
+  } else {
+    items.forEach(it=>{
+      const val = +it.value||0;
+      const angle = (val/total)*360;
+      if(angle<=0) return;
+      const start = polarToCartesian(cx,cy,r,cum);
+      const end = polarToCartesian(cx,cy,r,cum+angle);
+      const largeArc = angle>180?1:0;
+      paths += `<path d="M ${cx} ${cy} L ${start.x.toFixed(2)} ${start.y.toFixed(2)} A ${r} ${r} 0 ${largeArc} 1 ${end.x.toFixed(2)} ${end.y.toFixed(2)} Z" fill="${it.colorHex}" style="stroke:var(--surface)" stroke-width="1.5"/>`;
+      if(angle > 7){
+        const mid = cum + angle/2;
+        const pos = polarToCartesian(cx,cy,r*0.63,mid);
+        const pct = (val/total*100).toFixed(0);
+        labels += `<text x="${pos.x.toFixed(2)}" y="${(pos.y-3).toFixed(2)}" font-size="12" font-weight="700" fill="#fff" text-anchor="middle" style="paint-order:stroke;stroke:rgba(0,0,0,.28);stroke-width:2.5px;stroke-linejoin:round;">${val}</text>`;
+        labels += `<text x="${pos.x.toFixed(2)}" y="${(pos.y+10).toFixed(2)}" font-size="9" fill="#fff" text-anchor="middle" opacity="0.92" style="paint-order:stroke;stroke:rgba(0,0,0,.28);stroke-width:2px;">${pct}%</text>`;
+      }
+      cum += angle;
+    });
+  }
+
+  const svg = `<svg viewBox="0 0 170 170" xmlns="http://www.w3.org/2000/svg">${paths}${labels}</svg>`;
+  const legend = items.map(it=>{
+    const pct = total>0 ? ((+it.value||0)/total*100).toFixed(1) : '0.0';
+    return `<div class="pie-legend-row">
+      <span class="pie-swatch" style="background:${it.colorHex}"></span>
+      <span class="pie-legend-label">${it.label}</span>
+      <span class="pie-legend-val">${it.value} · ${pct}%</span>
+    </div>`;
+  }).join('');
+  container.innerHTML = `<div class="pie-row"><div class="pie-svg-wrap">${svg}</div><div class="pie-legend">${legend}</div></div>`;
+}
+
+function buildLineChart(container, labels, series){
+  const W=560,H=210,padL=32,padR=14,padT=14,padB=26;
+  const allVals = series.flatMap(s=>s.values);
+  const maxV = Math.max(...allVals, 1)*1.15;
+  const stepX = (W-padL-padR)/(labels.length-1);
+  const y = v => H-padB - (v/maxV)*(H-padT-padB);
+  const x = i => padL + i*stepX;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+  for(let g=0; g<=4; g++){
+    const gv = maxV/4*g;
+    const gy = y(gv);
+    svg += `<line x1="${padL}" y1="${gy}" x2="${W-padR}" y2="${gy}" style="stroke:var(--border)" stroke-width="1"/>`;
+    svg += `<text x="${padL-5}" y="${gy+3}" font-size="8.5" style="fill:var(--text-faint)" text-anchor="end">${Math.round(gv)}</text>`;
+  }
+  labels.forEach((lb,i)=>{
+    svg += `<text x="${x(i)}" y="${H-8}" font-size="9" style="fill:var(--text-faint)" text-anchor="middle">${lb}</text>`;
+  });
+  series.forEach(s=>{
+    const pts = s.values.map((v,i)=>`${x(i)},${y(v)}`).join(' ');
+    svg += `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+    s.values.forEach((v,i)=>{ svg += `<circle cx="${x(i)}" cy="${y(v)}" r="3" fill="${s.color}"/>`; });
+  });
+  svg += `</svg>`;
+  container.innerHTML = `<div class="linechart-wrap"><div class="linechart">${svg}</div></div>
+    <div class="line-legend">${series.map(s=>`<span class="line-legend-item"><span class="line-swatch" style="background:${s.color}"></span>${s.label}</span>`).join('')}</div>`;
+}
+
+/* ---------- bitácoras genéricas (Calibraciones Extraordinarias / Encendido de Planta) ---------- */
+function renderLogTable(logKey, fields){
+  const entries = DATA[logKey] || [];
+  const headerCells = fields.map(f=>`<th>${f.label}</th>`).join('') + '<th></th>';
+  const bodyRows = entries.length===0
+    ? `<tr><td colspan="${fields.length+1}" style="text-align:center;color:var(--text-faint);padding:14px;">Sin registros todavía.</td></tr>`
+    : entries.map((e,i)=>{
+        const cells = fields.map(f=>{
+          if(f.type==='select'){
+            const opts = f.options.map(o=> `<option value="${o.value}" ${String(e[f.key])===String(o.value)?'selected':''}>${o.label}</option>`).join('');
+            return `<td><select data-log="${logKey}" data-idx="${i}" data-field="${f.key}">${opts}</select></td>`;
+          }
+          const type = f.type==='date' ? 'date' : 'text';
+          const val = (e[f.key]!==undefined && e[f.key]!==null) ? e[f.key] : '';
+          return `<td><input type="${type}" data-log="${logKey}" data-idx="${i}" data-field="${f.key}" value="${esc(val)}"></td>`;
+        }).join('');
+        return `<tr>${cells}<td><button class="db-btn-small danger" data-log-del="${logKey}" data-idx="${i}">Eliminar</button></td></tr>`;
+      }).join('');
+  return `<div class="db-table-wrap"><table class="db-table">
+      <thead><tr>${headerCells}</tr></thead>
+      <tbody>${bodyRows}</tbody>
+    </table></div>
+    <button class="db-btn-small" style="margin-top:10px;" data-log-add="${logKey}">+ Agregar registro</button>`;
+}
+function newLogEntry(logKey){
+  const base = {fecha:'', zona: unlockedZone || ZONES[0], estacion:'', t:Date.now(), _d:bucketId(logKey)};
+  if(logKey==='calibraciones') return Object.assign(base, {motivo:''});
+  if(logKey==='encendido') return Object.assign(base, {administrador:'', encendio:'false'});
+  return {};
+}
+function bindLogTables(container){
+  container.querySelectorAll('[data-log][data-field]').forEach(el=>{
+    const evt = el.tagName==='SELECT' ? 'change' : 'input';
+    el.addEventListener(evt, ()=>{
+      const logKey = el.dataset.log, idx = +el.dataset.idx, field = el.dataset.field;
+      const entry = DATA[logKey][idx];
+      if(!entry) return;
+      entry[field] = el.value;
+      queueSave('b:' + entry._d);
+      const activeKey = document.querySelector('nav.tabs button.active').dataset.tab;
+      renderAll(el, activeKey);
+    });
+  });
+  container.querySelectorAll('[data-log-del]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const logKey = b.dataset.logDel, idx = +b.dataset.idx;
+      const entry = DATA[logKey][idx];
+      if(!entry) return;
+      DATA[logKey].splice(idx,1);
+      queueSave('b:' + entry._d);
+      const activeKey = document.querySelector('nav.tabs button.active').dataset.tab;
+      renderAll(null, activeKey);
+    });
+  });
+  container.querySelectorAll('[data-log-add]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const logKey = b.dataset.logAdd;
+      const entry = newLogEntry(logKey);
+      DATA[logKey].push(entry);
+      queueSave('b:' + entry._d);
+      const activeKey = document.querySelector('nav.tabs button.active').dataset.tab;
+      renderAll(null, activeKey);
+    });
+  });
+}
+
+/* ---------- exportar a Excel con formato (xlsx-js-style) ---------- */
+/* Dentro del visor las descargas pasan por la capacidad "downloads"; si el archivo se abre suelto, descarga normal. */
+async function saveFile(filename, data, mime){
+  let dl = null;
+  try{ if(window.claude && typeof window.claude.use==='function') dl = await window.claude.use('downloads'); }catch(e){}
+  if(dl){
+    try{ await dl.save({filename: filename, data: data}); }
+    catch(e){ if(!e || e.code!=='declined') await uiAlert('No se pudo descargar el archivo.'); }
+    return;
+  }
+  const blob = new Blob([data], {type: mime || 'application/octet-stream'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function downloadJSON(filename, obj){
+  return saveFile(filename, JSON.stringify(obj, null, 2), 'application/json');
+}
+
+function styleSheet(ws, opts){
+  opts = opts || {};
+  const headerColor = (opts.headerColor||'2E5EFF').replace('#','').toUpperCase();
+  const ref = ws['!ref'];
+  if(!ref) return;
+  const range = XLSX.utils.decode_range(ref);
+  for(let R=range.s.r; R<=range.e.r; R++){
+    for(let C=range.s.c; C<=range.e.c; C++){
+      const addr = XLSX.utils.encode_cell({r:R,c:C});
+      const cell = ws[addr];
+      if(!cell) continue;
+      if(R===0){
+        cell.s = {
+          font:{bold:true, color:{rgb:'FFFFFF'}, sz:11},
+          fill:{fgColor:{rgb:headerColor}},
+          alignment:{horizontal:'center', vertical:'center', wrapText:true},
+          border:{top:{style:'thin',color:{rgb:'CCCCCC'}},bottom:{style:'thin',color:{rgb:'CCCCCC'}},left:{style:'thin',color:{rgb:'CCCCCC'}},right:{style:'thin',color:{rgb:'CCCCCC'}}}
+        };
+      } else {
+        cell.s = {
+          font:{bold: !!(C===0 && opts.boldFirstCol)},
+          alignment:{vertical:'center', horizontal: (typeof cell.v==='number') ? 'center' : 'left'},
+          border:{top:{style:'thin',color:{rgb:'E6E9F1'}},bottom:{style:'thin',color:{rgb:'E6E9F1'}},left:{style:'thin',color:{rgb:'E6E9F1'}},right:{style:'thin',color:{rgb:'E6E9F1'}}},
+          fill: (opts.zebra && R%2===0) ? {fgColor:{rgb:'F5F6FB'}} : undefined
+        };
+      }
+    }
+  }
+  ws['!cols'] = opts.colWidths || Array(range.e.c+1).fill({wch:18});
+  ws['!views'] = [{state:'frozen', ySplit:1}];
+  ws['!autofilter'] = {ref: ref};
+}
+
+function buildWorkbook(dataObj){
+  const wb = XLSX.utils.book_new();
+
+  const dbHeader = ['Campo', ...ZONES.map(z=>ZONE_LABEL[z])];
+  const dbRows = DB_FIELDS.map(f=> [f.label, ...ZONES.map(z=> getPath(dataObj[z], f.path))]);
+  const wsDB = XLSX.utils.aoa_to_sheet([dbHeader, ...dbRows]);
+  styleSheet(wsDB, {headerColor:'2E5EFF', boldFirstCol:true, colWidths:[{wch:30},{wch:14},{wch:14},{wch:14},{wch:14}]});
+  XLSX.utils.book_append_sheet(wb, wsDB, 'Base de Datos');
+
+  const monthHeader = ['Zona', ...MONTHS];
+  const monthRows = ZONES.map(z=> [ZONE_LABEL[z], ...dataObj[z].revision.mensual]);
+  const wsMonth = XLSX.utils.aoa_to_sheet([monthHeader, ...monthRows]);
+  styleSheet(wsMonth, {headerColor:'FF9F1C', boldFirstCol:true, colWidths:[{wch:14},...MONTHS.map(()=>({wch:8}))]});
+  XLSX.utils.book_append_sheet(wb, wsMonth, 'Revision Mensual');
+
+  const weightHeader = CATEGORIES.map(c=>c.title);
+  const weightRow = CATEGORIES.map(c=> dataObj.weights[c.key]||0);
+  const wsWeights = XLSX.utils.aoa_to_sheet([weightHeader, weightRow]);
+  styleSheet(wsWeights, {headerColor:'8B5CF6'});
+  XLSX.utils.book_append_sheet(wb, wsWeights, 'Pesos');
+
+  const totalW = CATEGORIES.reduce((s,c)=> s+(+dataObj.weights[c.key]||0),0)||1;
+  const resumenHeader = ['Zona','Estaciones','Responsable','Indice compuesto (%)'];
+  const resumenRows = ZONES.map(z=>{
+    const score = CATEGORIES.reduce((s,c)=> s+(+dataObj.weights[c.key]||0)*c.pct(dataObj[z]),0)/totalW;
+    return [ZONE_LABEL[z], dataObj[z].info.estaciones, dataObj[z].info.responsable, (score*100).toFixed(1)+'%'];
+  });
+  const wsResumen = XLSX.utils.aoa_to_sheet([resumenHeader, ...resumenRows]);
+  styleSheet(wsResumen, {headerColor:'12172B', boldFirstCol:true});
+  XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen');
+
+  const calibHeader = ['Fecha','Zona','Estación','Motivo'];
+  const calibRows = (dataObj.calibraciones||[]).map(e=> [e.fecha||'', ZONE_LABEL[e.zona]||e.zona||'', e.estacion||'', e.motivo||'']);
+  const wsCalib = XLSX.utils.aoa_to_sheet([calibHeader, ...(calibRows.length?calibRows:[['','','','']])]);
+  styleSheet(wsCalib, {headerColor:'FF9F1C', colWidths:[{wch:14},{wch:14},{wch:22},{wch:36}]});
+  XLSX.utils.book_append_sheet(wb, wsCalib, 'Calibraciones');
+
+  const encHeader = ['Fecha','Zona','Estación','Administrador','¿Encendió?'];
+  const encRows = (dataObj.encendido||[]).map(e=> [e.fecha||'', ZONE_LABEL[e.zona]||e.zona||'', e.estacion||'', e.administrador||'', (e.encendio==='true'||e.encendio===true) ? 'Sí':'No']);
+  const wsEnc = XLSX.utils.aoa_to_sheet([encHeader, ...(encRows.length?encRows:[['','','','','']])]);
+  styleSheet(wsEnc, {headerColor:'00C48C', colWidths:[{wch:14},{wch:14},{wch:22},{wch:22},{wch:12}]});
+  XLSX.utils.book_append_sheet(wb, wsEnc, 'Encendido Planta');
+
+  const byAdmin = {};
+  (dataObj.encendido||[]).forEach(e=>{
+    const name = (e.administrador||'').trim() || 'Sin nombre';
+    if(!byAdmin[name]) byAdmin[name] = {total:0, si:0};
+    byAdmin[name].total++;
+    if(e.encendio==='true'||e.encendio===true) byAdmin[name].si++;
+  });
+  const rankHeader = ['Administrador','Verificaciones','Veces que encendió','% Cumplimiento'];
+  const rankRows = Object.keys(byAdmin).map(name=>{
+    const d = byAdmin[name];
+    return [name, d.total, d.si, ((d.si/d.total)*100).toFixed(1)+'%'];
+  }).sort((a,b)=> parseFloat(b[3])-parseFloat(a[3]));
+  const wsRank = XLSX.utils.aoa_to_sheet([rankHeader, ...(rankRows.length?rankRows:[['','','','']])]);
+  styleSheet(wsRank, {headerColor:'2E5EFF', boldFirstCol:true, colWidths:[{wch:24},{wch:16},{wch:18},{wch:16}]});
+  XLSX.utils.book_append_sheet(wb, wsRank, 'Ranking Administradores');
+
+  const puntosHeader = ['Zona','Número de Plantas','Veces que Sí','Puntos (Sí ÷ Plantas)'];
+  const puntosRows = ZONES.map(z=>{
+    const zEntries = (dataObj.encendido||[]).filter(e=> e.zona===z);
+    const si = zEntries.filter(e=> e.encendio==='true'||e.encendio===true).length;
+    const numPlantas = +dataObj[z].encendidoInfo.numPlantas || 0;
+    const points = numPlantas>0 ? (si/numPlantas) : 0;
+    return [ZONE_LABEL[z], numPlantas, si, points.toFixed(2)];
+  });
+  const wsPuntos = XLSX.utils.aoa_to_sheet([puntosHeader, ...puntosRows]);
+  styleSheet(wsPuntos, {headerColor:'00C48C', boldFirstCol:true, colWidths:[{wch:14},{wch:16},{wch:14},{wch:20}]});
+  XLSX.utils.book_append_sheet(wb, wsPuntos, 'Puntos Encendido');
+
+  return wb;
+}
+
+async function downloadXLSX(dataObj, filename){
+  if(typeof XLSX === 'undefined'){
+    await uiAlert('No se pudo cargar el generador de Excel (revisa tu conexión a internet). Se descargará en JSON en su lugar.');
+    return downloadJSON(filename.replace(/\.xlsx$/, '.json'), dataObj);
+  }
+  const wb = buildWorkbook(dataObj);
+  const out = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+  return saveFile(filename, new Uint8Array(out), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+}
+
+/* ---------- render: resumen ---------- */
+function renderZoneLockBox(){
+  const box = document.getElementById('zoneLockBody');
+  if(!box) return;
+  if(unlockedZone){
+    box.innerHTML = `<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <span style="font-weight:700;color:${ZONE_COLOR_HEX[unlockedZone]}">✓ Editando como ${ZONE_LABEL[unlockedZone]}</span>
+      <button class="reset-btn" id="zoneLockRelockBtn" style="margin:0;">Bloquear</button>
+    </div>`;
+    document.getElementById('zoneLockRelockBtn').addEventListener('click', ()=>{
+      unlockedZone = null;
+      try{ sessionStorage.removeItem('unlockedZone'); }catch(e){}
+      const activeKey = document.querySelector('nav.tabs button.active').dataset.tab;
+      renderAll(null, activeKey);
+    });
+    return;
+  }
+  box.innerHTML = `<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+    <div class="field-row" style="margin:0;"><label>Zona</label>
+      <select id="zoneLockSelect">${ZONES.map(z=>`<option value="${z}">${ZONE_LABEL[z]}</option>`).join('')}</select>
+    </div>
+    <div class="field-row" style="margin:0;"><label>Contraseña</label>
+      <input type="password" id="zoneLockPass" placeholder="Contraseña de la zona" autocomplete="off">
+    </div>
+    <button class="archive-btn" id="zoneLockBtn" style="margin:0;">Desbloquear</button>
+    <span id="zoneLockErr" style="color:var(--bad);font-size:12px;"></span>
+  </div>`;
+  const doUnlock = ()=>{
+    const z = document.getElementById('zoneLockSelect').value;
+    const pass = document.getElementById('zoneLockPass').value;
+    if(ZONE_PASSWORDS[z] && pass===ZONE_PASSWORDS[z]){
+      unlockedZone = z;
+      try{ sessionStorage.setItem('unlockedZone', z); }catch(e){}
+      const activeKey = document.querySelector('nav.tabs button.active').dataset.tab;
+      renderAll(null, activeKey);
+    } else {
+      document.getElementById('zoneLockErr').textContent = 'Contraseña incorrecta.';
+      const p = document.getElementById('zoneLockPass');
+      p.value=''; p.focus();
+    }
+  };
+  document.getElementById('zoneLockBtn').addEventListener('click', doUnlock);
+  document.getElementById('zoneLockPass').addEventListener('keydown', e=>{ if(e.key==='Enter') doUnlock(); });
+}
+
+function renderResumen(){
+  const el = document.getElementById('panel-resumen');
+  const catTotals = CATEGORIES.map(c=>{
+    if(c.key==='mant'){
+      // Mantenimiento Preventivo (nacional) = promedio simple del % de cada zona, sin ponderar por volumen.
+      const suma = ZONES.reduce((s,z)=> s + c.pct(DATA[z]), 0);
+      return suma / ZONES.length;
+    }
+    let num=0, den=0;
+    ZONES.forEach(z=>{
+      if(c.key==='tickets'){ num+=DATA[z].tickets.cerradas; den+=DATA[z].tickets.cerradas+DATA[z].tickets.pendientes; }
+      if(c.key==='revision'){ num+=DATA[z].revision.realizadas; den+=DATA[z].revision.meta; }
+      if(c.key==='imagen'){ num+=DATA[z].imagen.realizadas; den+=DATA[z].imagen.programados; }
+      if(c.key==='servicios'){ num+=DATA[z].servicios.realizadas; den+=DATA[z].servicios.programados; }
+    });
+    return safeDiv(num,den);
+  });
+  const totalEstaciones = ZONES.reduce((s,z)=> s+ (+DATA[z].info.estaciones||0), 0);
+
+  const W = DATA.weights;
+  const totalW = CATEGORIES.reduce((s,c)=> s+(+W[c.key]||0), 0) || 1;
+  const zoneScores = ZONES.map(z=> CATEGORIES.reduce((s,c)=> s+(+W[c.key]||0)*c.pct(DATA[z]),0)/totalW );
+
+  const nationalResult = zoneScores.reduce((s,v)=> s+v, 0) / zoneScores.length;
+
+  let kpiHtml = `<div class="kpi-grid">`;
+  CATEGORIES.forEach((c,i)=>{
+    const p = catTotals[i];
+    const color = CAT_COLOR_HEX[c.key];
+    kpiHtml += `<div class="kpi" style="--kcolor:${color}">
+      <div class="kpi-label">${c.pctLabel} · ${c.title}</div>
+      <div class="kpi-value">${fmtPct(p)}</div>
+      <div class="kpi-bar"><div class="kpi-bar-fill" style="--w:${Math.min(p*100,100)}%;background:${color}"></div></div>
+      ${c.key==='mant' ? '<div style="font-size:10px;color:var(--text-faint);margin-top:6px;">Promedio simple de las 4 zonas</div>' : ''}
+    </div>`;
+  });
+  kpiHtml += `<div class="kpi" style="--kcolor:var(--text)">
+    <div class="kpi-label">Estaciones totales</div>
+    <div class="kpi-value">${totalEstaciones}</div>
+    <div class="kpi-bar"><div class="kpi-bar-fill" style="--w:100%;background:var(--text)"></div></div>
+  </div></div>`;
+
+  const heroStats = ZONES.map(z=>{
+    const p = zoneScores[ZONES.indexOf(z)];
+    return `<div class="hero-stat">
+      <div class="n">${fmtPct(p)}</div>
+      <div class="l">${ZONE_LABEL[z]}</div>
+      <div class="bar"><i style="--w:${Math.min(p*100,100)}%;background:${ZONE_COLOR_HEX[z]}"></i></div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="chart-box" style="margin-bottom:22px;">
+      <p class="chart-title">🔒 Editar como zona</p>
+      <p class="chart-sub">Elige tu zona e ingresa su contraseña para poder editar sus datos en todo el panel. Sin desbloquear, los campos quedan de solo lectura. La contraseña solo aplica en este navegador.</p>
+      <div id="zoneLockBody"></div>
+    </div>
+
+    <div class="hero">
+      <div class="donut-wrap">
+        <div class="donut" style="--pct:${Math.min(nationalResult*100,100)};--dcolor:${nationalResult>=0.9?'#00c48c':nationalResult>=0.7?'#ff9f1c':'#ff3d71'}">
+          <div class="donut-inner"><span class="val">${fmtPct(nationalResult)}</span><span class="lbl">RESULTADO NACIONAL</span></div>
+        </div>
+      </div>
+      <div class="hero-stats">${heroStats}</div>
+    </div>
+    <p class="section-sub" style="margin-top:10px;margin-bottom:22px;">Resultado Nacional = promedio simple de las 4 zonas: (${ZONES.map(z=>fmtPct(zoneScores[ZONES.indexOf(z)])).join(' + ')}) ÷ 4 = <b>${fmtPct(nationalResult)}</b>. El % de cada zona es su índice compuesto (pesos editables abajo).</p>
+
+    <h2 class="section-title">Editar zonas</h2>
+    <p class="section-sub">Estaciones y responsable — cambia lo que necesites, se refleja en todo el panel.</p>
+    <div class="zone-grid" id="resumenZonas"></div>
+
+    <h2 class="section-title">Panorama por categoría</h2>
+    <p class="section-sub">% nacional agregado de cada categoría (Mantenimiento Preventivo es promedio simple de zonas; las demás son suma de realizado ÷ suma de programado).</p>
+    ${kpiHtml}
+
+    <div class="charts-row">
+      <div class="chart-box">
+        <p class="chart-title">Pesos del índice compuesto</p>
+        <p class="chart-sub">Editables. Se normalizan solos. Servicios Realizados inicia en 0% — súbelo si quieres que cuente en el índice compuesto.</p>
+        <div id="weightInputs"></div>
+        <div id="pieWeights" style="margin-top:18px;"></div>
+      </div>
+      <div class="chart-box">
+        <p class="chart-title">Índice compuesto por zona</p>
+        <p class="chart-sub">Barras + línea de tendencia entre zonas.</p>
+        <div id="barResumen"></div>
+      </div>
+    </div>
+
+    <div class="chart-box">
+      <p class="chart-title">Ranking de zonas</p>
+      <div class="leaderboard" id="lbResumen"></div>
+    </div>
+  `;
+
+  const zonasBox = document.getElementById('resumenZonas');
+  zonasBox.innerHTML = ZONES.map(z=>{
+    const p = zoneScores[ZONES.indexOf(z)];
+    const d = DATA[z];
+    return `<div class="zone-card" style="--zone-color:${ZONE_COLOR_HEX[z]}">
+      <div class="zone-head">
+        <span class="zone-name">${ZONE_LABEL[z]}</span>
+        ${ringHtml(p, ZONE_COLOR_HEX[z])}
+      </div>
+      <div class="field-row"><label>Estaciones</label><input type="number" min="0" data-zone="${z}" data-path="info.estaciones" value="${d.info.estaciones}"></div>
+      <div class="field-row"><label>Responsable</label><input type="text" data-zone="${z}" data-path="info.responsable" value="${esc(d.info.responsable)}"></div>
+    </div>`;
+  }).join('');
+
+  const weightBox = document.getElementById('weightInputs');
+  weightBox.innerHTML = CATEGORIES.map(c=>`
+    <div class="field-row">
+      <label style="color:${CAT_COLOR_HEX[c.key]};font-weight:600;">${c.title}</label>
+      <input type="number" min="0" max="100" step="1" data-zone="weights" data-path="${c.key}" value="${W[c.key]}"> %
+    </div>`).join('');
+
+  renderZoneLockBox();
+
+  buildPieChart(document.getElementById('pieWeights'), CATEGORIES.map(c=>({label:c.title, value:+W[c.key]||0, colorHex:CAT_COLOR_HEX[c.key]})));
+
+  buildBarLineChart(document.getElementById('barResumen'), ZONES.map(z=>{
+    const p = zoneScores[ZONES.indexOf(z)];
+    return {label:ZONE_LABEL[z], value:p, colorHex:ZONE_COLOR_HEX[z], displayValue:fmtPct(p)};
+  }));
+  buildLeaderboard(document.getElementById('lbResumen'), ZONES.map(z=>{
+    const p = zoneScores[ZONES.indexOf(z)];
+    return {label:ZONE_LABEL[z], value:p, colorHex:ZONE_COLOR_HEX[z], displayValue:fmtPct(p)};
+  }));
+  bindInputs(el);
+}
+
+/* ---------- render: base de datos (tabla consolidada + bitácoras + historial) ---------- */
+function renderBaseDatos(){
+  const el = document.getElementById('panel-basedatos');
+
+  const rows = DB_FIELDS.map(f=>{
+    const cells = ZONES.map(z=>{
+      const val = getPath(DATA[z], f.path);
+      const type = f.type==='text' ? 'text' : 'number';
+      return `<td><input type="${type}" ${type==='number'?'min="0"':''} data-zone="${z}" data-path="${f.path}" value="${esc(val)}"></td>`;
+    }).join('');
+    return `<tr><td>${f.label}</td>${cells}</tr>`;
+  }).join('');
+
+  const weightCells = CATEGORIES.map(c=> `<td><input type="number" min="0" max="100" data-zone="weights" data-path="${c.key}" value="${DATA.weights[c.key]}"></td>`).join('');
+
+  el.innerHTML = `
+    <h2 class="section-title">Base de Datos</h2>
+    <p class="section-sub">Todos los campos y bitácoras de todas las láminas en un solo lugar, para consultar o modificar rápido sin cambiar de pestaña. Cualquier cambio aquí se refleja en todo el panel al instante.</p>
+
+    <div class="db-actions">
+      <button class="archive-btn admin-only" id="dbArchiveBtn">Guardar periodo y reiniciar</button>
+      <button class="reset-btn admin-only" id="dbResetBtn">Restaurar datos originales</button>
+      <button class="reset-btn" id="dbDownloadBtn">Descargar en Excel (XLSX)</button>
+    </div>
+
+    <div class="db-table-wrap">
+      <table class="db-table">
+        <thead><tr><th style="text-align:left;">Campo</th>${ZONES.map(z=>`<th style="color:${ZONE_COLOR_HEX[z]}">${ZONE_LABEL[z]}</th>`).join('')}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+
+    <p class="zone-note" style="margin:14px 0 22px;">La tabla mensual de Revisión Electrónica se edita en su propia pestaña — ahí se va agregando mes con mes y "Guardar periodo y reiniciar" nunca la borra.</p>
+
+    <div class="chart-box">
+      <p class="chart-title">Pesos del índice compuesto</p>
+      <div class="db-table-wrap">
+        <table class="db-table">
+          <thead><tr>${CATEGORIES.map(c=>`<th style="color:${CAT_COLOR_HEX[c.key]}">${c.title}</th>`).join('')}</tr></thead>
+          <tbody><tr>${weightCells}</tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="chart-box">
+      <p class="chart-title">Calibraciones Extraordinarias</p>
+      <p class="chart-sub">Bitácora de Revisión Electrónica Nacional (fecha, zona, estación, motivo). No se borra al reiniciar periodo.</p>
+      ${renderLogTable('calibraciones', CALIBRACIONES_FIELDS)}
+    </div>
+
+    <div class="chart-box">
+      <p class="chart-title">Encendido de Planta</p>
+      <p class="chart-sub">Verificación semanal por estación y administrador. No se borra al reiniciar periodo.</p>
+      ${renderLogTable('encendido', ENCENDIDO_FIELDS)}
+    </div>
+
+    <div class="chart-box">
+      <p class="chart-title">Historial de periodos guardados</p>
+      <p class="chart-sub">Cada vez que usas "Guardar periodo y reiniciar" se agrega un respaldo completo aquí.</p>
+      <div id="historyList" class="history-list"></div>
+    </div>
+  `;
+
+  document.getElementById('dbArchiveBtn').addEventListener('click', archiveAndReset);
+  document.getElementById('dbResetBtn').addEventListener('click', restoreOriginal);
+  document.getElementById('dbDownloadBtn').addEventListener('click', ()=>{
+    const dateStr = new Date().toISOString().slice(0,10);
+    downloadXLSX(DATA, `mantenimiento-nacional-${dateStr}.xlsx`);
+  });
+
+  refreshHistoryList();
+  bindInputs(el);
+}
+
+/* ---------- render: zonas ---------- */
+function renderZonas(){
+  const el = document.getElementById('panel-zonas');
+  let cards = ZONES.map(z=>{
+    const d = DATA[z];
+    return `<div class="zone-card" style="--zone-color:${ZONE_COLOR_HEX[z]}">
+      <div class="zone-head"><span class="zone-name">${ZONE_LABEL[z]}</span></div>
+      <div class="field-row"><label>Estaciones</label><input type="number" min="0" data-zone="${z}" data-path="info.estaciones" value="${d.info.estaciones}"></div>
+      <div class="field-row"><label>Responsable</label><input type="text" data-zone="${z}" data-path="info.responsable" value="${esc(d.info.responsable)}"></div>
+    </div>`;
+  }).join('');
+  el.innerHTML = `
+    <h2 class="section-title">Zonas</h2>
+    <p class="section-sub">Estaciones a cargo y responsable de cada zona.</p>
+    <div class="zone-grid">${cards}</div>
+    <div class="chart-box">
+      <p class="chart-title">Distribución de estaciones por zona</p>
+      <div id="pieZonas"></div>
+    </div>
+  `;
+  buildPieChart(document.getElementById('pieZonas'), ZONES.map(z=> ({label:ZONE_LABEL[z], value:+DATA[z].info.estaciones||0, colorHex:ZONE_COLOR_HEX[z]})));
+  bindInputs(el);
+}
+
+/* ---------- render: categorías ---------- */
+function renderCategory(cat){
+  const el = document.getElementById('panel-'+cat.key);
+  let cards = ZONES.map(z=>{
+    const d = DATA[z];
+    const p = cat.pct(d);
+    let rows = cat.fields.map(f=>{
+      const val = getPath(d, f.path);
+      return `<div class="field-row"><label>${f.label}</label><input type="number" min="0" step="1" data-zone="${z}" data-path="${f.path}" value="${val}"></div>`;
+    }).join('');
+    return `<div class="zone-card" style="--zone-color:${ZONE_COLOR_HEX[z]}">
+      <div class="zone-head">
+        <span class="zone-name">${ZONE_LABEL[z]}</span>
+        ${ringHtml(p, ZONE_COLOR_HEX[z])}
+      </div>
+      ${rows}
+      <div class="zone-note">${cat.note(d)}</div>
+    </div>`;
+  }).join('');
+
+  const items = ZONES.map(z=>{
+    const p = cat.pct(DATA[z]);
+    return {label:ZONE_LABEL[z], value:p, colorHex:ZONE_COLOR_HEX[z], displayValue:fmtPct(p)};
+  });
+  const shareItems = ZONES.map(z=> ({label:ZONE_LABEL[z], value:cat.shareValue(DATA[z]), colorHex:ZONE_COLOR_HEX[z]}));
+
+  let monthlySection = '';
+  let historyNote = '';
+  let extraSection = '';
+
+  if(cat.key==='revision'){
+    monthlySection = `
+      <div class="chart-box">
+        <p class="chart-title">Tendencia mensual de revisiones</p>
+        <p class="chart-sub">Editable por zona y mes.</p>
+        <div id="lineRevision"></div>
+        <div class="month-table-wrap"><table class="month-table" id="monthTable"></table></div>
+      </div>`;
+    historyNote = `<p class="history-note">Esta lámina no se borra con "Guardar periodo y reiniciar": solo se le va agregando mes con mes.</p>`;
+    extraSection = `
+      <div class="chart-box">
+        <p class="chart-title">Calibraciones Extraordinarias</p>
+        <p class="chart-sub">Bitácora: fecha, zona, estación y motivo. Se va agregando registro por registro (no se borra al reiniciar periodo).</p>
+        ${renderLogTable('calibraciones', CALIBRACIONES_FIELDS)}
+      </div>`;
+  }
+
+  if(cat.key==='mant'){
+    extraSection = `
+      <h2 class="section-title" style="margin-top:6px;">Mantenimiento por tipo de equipo</h2>
+      <p class="section-sub">Plantas, Compresores, Climas y Sistema de Recolección de Vapores — programados/terminados por zona.</p>
+      <p class="zone-note" style="margin:-8px 0 18px;">Nota: el % de Mantenimiento Preventivo de arriba sigue basándose solo en Trimestral + Semestral + Plantas. Estas 4 tablas son para seguimiento aparte y no están incluidas en ese %.</p>
+      ${EQUIPOS.map(eq=>`
+        <div class="chart-box">
+          <p class="chart-title" style="color:${eq.color}">${eq.label}</p>
+          <div class="db-table-wrap" style="margin-bottom:16px;">
+            <table class="db-table">
+              <thead><tr><th style="text-align:left;">Zona</th><th>Programados</th><th>Terminados</th></tr></thead>
+              <tbody>${ZONES.map(z=>`<tr>
+                <td style="color:${ZONE_COLOR_HEX[z]}">${ZONE_LABEL[z]}</td>
+                <td><input type="number" min="0" data-zone="${z}" data-path="${eq.prog}" value="${getPath(DATA[z],eq.prog)}"></td>
+                <td><input type="number" min="0" data-zone="${z}" data-path="${eq.term}" value="${getPath(DATA[z],eq.term)}"></td>
+              </tr>`).join('')}</tbody>
+            </table>
+          </div>
+          <div class="charts-row">
+            <div><p class="chart-sub" style="margin-bottom:8px;">Comparación por zona</p><div id="bar-eq-${eq.key}"></div></div>
+            <div><p class="chart-sub" style="margin-bottom:8px;">Participación de terminados</p><div id="pie-eq-${eq.key}"></div></div>
+          </div>
+        </div>
+      `).join('')}
+    `;
+  }
+
+  el.innerHTML = `
+    <h2 class="section-title">${cat.title}</h2>
+    <p class="section-sub">${cat.pctLabel} por zona · edita cualquier valor para recalcular en tiempo real.</p>
+    ${historyNote}
+    <div class="zone-grid">${cards}</div>
+    <div class="charts-row">
+      <div class="chart-box">
+        <p class="chart-title">Comparación por zona</p>
+        <div id="bar-${cat.key}"></div>
+      </div>
+      <div class="chart-box">
+        <p class="chart-title">${cat.shareLabel} por zona</p>
+        <div id="pie-${cat.key}"></div>
+      </div>
+    </div>
+    ${monthlySection}
+    ${extraSection}
+  `;
+  buildBarLineChart(document.getElementById('bar-'+cat.key), items);
+  buildPieChart(document.getElementById('pie-'+cat.key), shareItems);
+
+  if(cat.key==='revision'){
+    buildLineChart(document.getElementById('lineRevision'), MONTHS, ZONES.map(z=>({label:ZONE_LABEL[z], color:ZONE_COLOR_HEX[z], values:DATA[z].revision.mensual})));
+    const table = document.getElementById('monthTable');
+    const head = `<tr><th>Zona</th>${MONTHS.map(m=>`<th>${m}</th>`).join('')}</tr>`;
+    const rows = ZONES.map(z=>{
+      const cells = MONTHS.map((m,i)=>`<td><input type="number" min="0" data-zone="${z}" data-path="revision.mensual.${i}" value="${DATA[z].revision.mensual[i]}"></td>`).join('');
+      return `<tr><td style="color:${ZONE_COLOR_HEX[z]}">${ZONE_LABEL[z]}</td>${cells}</tr>`;
+    }).join('');
+    table.innerHTML = `<thead>${head}</thead><tbody>${rows}</tbody>`;
+  }
+
+  if(cat.key==='mant'){
+    EQUIPOS.forEach(eq=>{
+      const eqItems = ZONES.map(z=>{
+        const p = safeDiv(getPath(DATA[z],eq.term), getPath(DATA[z],eq.prog));
+        return {label:ZONE_LABEL[z], value:p, colorHex:ZONE_COLOR_HEX[z], displayValue:fmtPct(p)};
+      });
+      buildBarLineChart(document.getElementById('bar-eq-'+eq.key), eqItems);
+      const eqShare = ZONES.map(z=> ({label:ZONE_LABEL[z], value:getPath(DATA[z],eq.term), colorHex:ZONE_COLOR_HEX[z]}));
+      buildPieChart(document.getElementById('pie-eq-'+eq.key), eqShare);
+    });
+  }
+
+  bindInputs(el);
+}
+
+/* ---------- render: Encendido de Planta ---------- */
+function renderEncendido(){
+  const el = document.getElementById('panel-encendido');
+  if(!el) return;
+
+  const entries = DATA.encendido || [];
+
+  const byAdmin = {};
+  entries.forEach(e=>{
+    const name = (e.administrador||'').trim() || 'Sin nombre';
+    if(!byAdmin[name]) byAdmin[name] = {total:0, si:0};
+    byAdmin[name].total++;
+    if(e.encendio==='true' || e.encendio===true) byAdmin[name].si++;
+  });
+  const adminRanking = Object.keys(byAdmin).map(name=>{
+    const d = byAdmin[name];
+    return {name, total:d.total, si:d.si, pct: safeDiv(d.si, d.total)};
+  }).sort((a,b)=> b.pct-a.pct || b.total-a.total);
+
+  const zoneItems = ZONES.map(z=>{
+    const zEntries = entries.filter(e=> e.zona===z);
+    const total = zEntries.length;
+    const si = zEntries.filter(e=> e.encendio==='true'||e.encendio===true).length;
+    const p = safeDiv(si,total);
+    return {label:ZONE_LABEL[z], value:p, colorHex:ZONE_COLOR_HEX[z], displayValue: total>0 ? fmtPct(p) : '0.0%'};
+  });
+
+  const totalSi = entries.filter(e=> e.encendio==='true'||e.encendio===true).length;
+  const totalNo = entries.length - totalSi;
+
+  const pointsItems = ZONES.map(z=>{
+    const zEntries = entries.filter(e=> e.zona===z);
+    const siZone = zEntries.filter(e=> e.encendio==='true'||e.encendio===true).length;
+    const numPlantas = +DATA[z].encendidoInfo.numPlantas || 0;
+    const points = safeDiv(siZone, numPlantas);
+    return {label:ZONE_LABEL[z], value:points, colorHex:ZONE_COLOR_HEX[z], displayValue: numPlantas>0 ? (points.toFixed(2)+' pts') : 'Sin plantas', si:siZone, numPlantas};
+  });
+
+  const rankingHtml = adminRanking.length===0
+    ? `<p class="section-sub" style="margin:0;">Todavía no hay registros para evaluar administradores.</p>`
+    : `<div class="leaderboard">${adminRanking.map((a,i)=>`
+        <div class="lb-row">
+          <span class="lb-rank">${i+1}</span>
+          <span class="lb-label">${esc(a.name)}</span>
+          <span class="lb-track"><span class="lb-fill" style="--w:${Math.max(Math.min(a.pct*100,100),0)}%;background:${a.pct>=0.8?'var(--good)':a.pct>=0.5?'var(--warn)':'var(--bad)'}"></span></span>
+          <span class="lb-val">${a.si}/${a.total}</span>
+        </div>`).join('')}</div>`;
+
+  el.innerHTML = `
+    <h2 class="section-title">Encendido de Planta</h2>
+    <p class="section-sub">Verificación semanal, por estación, de si el administrador encendió su planta de emergencia.</p>
+
+    <div class="charts-row">
+      <div class="chart-box">
+        <p class="chart-title">% de encendido por zona</p>
+        <div id="barEncendidoZona"></div>
+      </div>
+      <div class="chart-box">
+        <p class="chart-title">Sí vs No (nacional)</p>
+        <div id="pieEncendidoSiNo"></div>
+      </div>
+    </div>
+
+    <div class="chart-box">
+      <p class="chart-title">Número de plantas por zona</p>
+      <p class="chart-sub">Este número lo defines tú (cuántas plantas de emergencia tiene cada zona); se usa para calcular los puntos de abajo. No se borra con "Guardar periodo y reiniciar".</p>
+      <div class="db-table-wrap">
+        <table class="db-table">
+          <thead><tr><th style="text-align:left;">Zona</th><th>Número de Plantas</th></tr></thead>
+          <tbody>${ZONES.map(z=>`<tr>
+            <td style="color:${ZONE_COLOR_HEX[z]}">${ZONE_LABEL[z]}</td>
+            <td><input type="number" min="0" data-zone="${z}" data-path="encendidoInfo.numPlantas" value="${DATA[z].encendidoInfo.numPlantas}"></td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="chart-box">
+      <p class="chart-title">Puntos por zona</p>
+      <p class="chart-sub">Puntos = (veces que sí encendió) ÷ (número de plantas de la zona). Más puntos = mejor desempeño relativo al tamaño de su parque de plantas.</p>
+      <div class="leaderboard" id="lbPuntosZona"></div>
+    </div>
+
+    <div class="chart-box">
+      <p class="chart-title">Ranking de administradores</p>
+      <p class="chart-sub">Ordenado por % de veces que sí encendió la planta.</p>
+      ${rankingHtml}
+    </div>
+
+    <div class="chart-box">
+      <p class="chart-title">Registrar verificación semanal</p>
+      <p class="chart-sub">Agrega un registro por estación cada semana. Esta bitácora no se borra con "Guardar periodo y reiniciar".</p>
+      ${renderLogTable('encendido', ENCENDIDO_FIELDS)}
+    </div>
+  `;
+
+  buildBarLineChart(document.getElementById('barEncendidoZona'), zoneItems);
+  buildPieChart(document.getElementById('pieEncendidoSiNo'), [
+    {label:'Sí encendió', value: totalSi, colorHex:'#00c48c'},
+    {label:'No encendió', value: totalNo, colorHex:'#ff3d71'}
+  ]);
+  buildLeaderboard(document.getElementById('lbPuntosZona'), pointsItems);
+
+  bindInputs(el);
+}
+
+function bindInputs(container){
+  container.querySelectorAll('input[data-zone]:not([data-log])').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const zone = inp.dataset.zone, path = inp.dataset.path;
+      const val = inp.type==='number' ? (parseFloat(inp.value)||0) : inp.value;
+      setPath(DATA[zone], path, val);
+      queueSave(zone==='weights' ? 'config' : 'z:' + zone);
+      const activeKey = document.querySelector('nav.tabs button.active').dataset.tab;
+      renderAll(inp, activeKey);
+    });
+  });
+  bindLogTables(container);
+}
+
+function renderAll(focusEl, activeKey){
+  renderResumen();
+  renderBaseDatos();
+  renderZonas();
+  CATEGORIES.forEach(renderCategory);
+  renderEncendido();
+  addCreditToAllPanels();
+  applyAccess();
+  applyZoneLock();
+  if(activeKey){
+    document.querySelectorAll('nav.tabs button').forEach(b=> b.classList.toggle('active', b.dataset.tab===activeKey));
+    document.querySelectorAll('.panel').forEach(p=> p.classList.toggle('active', p.id==='panel-'+activeKey));
+  }
+  if(focusEl){
+    const scope = (activeKey && document.getElementById('panel-'+activeKey)) || document;
+    let again = null;
+    if(focusEl.dataset.log){
+      again = scope.querySelector(`[data-log="${focusEl.dataset.log}"][data-idx="${focusEl.dataset.idx}"][data-field="${focusEl.dataset.field}"]`);
+    } else if(focusEl.dataset.zone){
+      again = scope.querySelector(`input[data-zone="${focusEl.dataset.zone}"][data-path="${focusEl.dataset.path}"]`);
+    }
+    if(again){
+      again.focus();
+      if(again.tagName==='INPUT'){ const v = again.value; again.value=''; again.value=v; }
+    }
+  }
+}
+
+boot();
+</script>
+</body>
+</html>
